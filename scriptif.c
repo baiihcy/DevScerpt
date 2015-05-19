@@ -1,13 +1,17 @@
 #include "scriptif.h"
 
-/*²ÎÊı:frame_name;·µ»ØÖµ:load_success*/
+/*å‚æ•°:frame_name;è¿”å›å€¼:load_success*/
 int luafunc_LoadFrame(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
-		luaL_checkstring(pLua,2);
-		
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	luaL_checkstring(pLua,2);
+	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		lua_pop(pLua,1); //pop STR_DEV_UDATA
+		return -1;
+	}
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	if (pPubDev) {
 		const char *pFrameName=lua_tostring(pLua,2);
 		if (pFrameName) {
 			pPubDev->SetFrameModule(pPubDev,pFrameName);
@@ -17,93 +21,139 @@ int luafunc_LoadFrame(lua_State *pLua)
 	}
 	return 0;
 }
-/*²ÎÊı:interval_sec,buffer,recv_proc,use_frame*/
+/*å‚æ•°:interval_sec,buffer,recv_proc,use_frame*/
 int luafunc_PollSend(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		lua_pop(pLua,1); //pop STR_DEV_UDATA
+		return -1;
+	}
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	return 0;
 }
-/*²ÎÊı:interval_sec,send_proc*/
+/*å‚æ•°:interval_sec,send_proc*/
 int luafunc_PollSendPeoc(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		lua_pop(pLua,1); //pop STR_DEV_UDATA
+		return -1;
+	}
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	printf("\n luafunc_PollSendPeoc");
 	return 0;
 }
-/*·µ»ØÖµ:device_no*/
+/*è¿”å›å€¼:device_no*/
 int luafunc_GetDeviceNo(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		lua_pop(pLua,1); //pop STR_DEV_UDATA
+		return -1;
+	}
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	if (pPubDev) {
 		lua_pushinteger(pLua,pPubDev->Get_DeviceNo(pPubDev));
 		return 1;
 	}
 	return 0;
 }
-/*·µ»ØÖµ:channel_no*/
+/*è¿”å›å€¼:channel_no*/
 int luafunc_GetChannelNo(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		lua_pop(pLua,1); //pop STR_DEV_UDATA
+		return -1;
+	}
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	if (pPubDev) {
 		lua_pushinteger(pLua,pPubDev->Get_ChannelNo(pPubDev));
 		return 1;
 	}
 	return 0;
 }
-/*·µ»ØÖµ:addr*/
+/*è¿”å›å€¼:addr*/
 int luafunc_GetLinkAddr(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		lua_pop(pLua,1); //pop STR_DEV_UDATA
+		return -1;
+	}
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	if (pPubDev) {
 		lua_pushinteger(pLua,pPubDev->Get_LinkAddr(pPubDev));
 		return 1;
 	}
 	return 0;
 }
-/*·µ»ØÖµ:addr2*/
+/*è¿”å›å€¼:addr2*/
 int luafunc_GetLinkAddr2(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		lua_pop(pLua,1); //pop STR_DEV_UDATA
+		return -1;
+	}
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	if (pPubDev) {
 		lua_pushstring(pLua,pPubDev->Get_LinkAddr2(pPubDev));
 		return 1;
 	}
 	return 0;
 }
-/*·µ»ØÖµ:Param1*/
+/*è¿”å›å€¼:Param1*/
 int luafunc_GetParam1(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		lua_pop(pLua,1); //pop STR_DEV_UDATA
+		return -1;
+	}
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	if (pPubDev) {
 		lua_pushstring(pLua,pPubDev->Get_Param1(pPubDev));
 		return 1;
 	}
 	return 0;
 }
-/*·µ»ØÖµ:Param2*/
+/*è¿”å›å€¼:Param2*/
 int luafunc_GetParam2(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		lua_pop(pLua,1); //pop STR_DEV_UDATA
+		return -1;
+	}
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	if (pPubDev) {
 		lua_pushstring(pLua,pPubDev->Get_Param2(pPubDev));
 		return 1;
 	}
 	return 0;
 }
-/*²ÎÊı:addr*/
+/*å‚æ•°:addr*/
 int luafunc_SetLinkAddr(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pScriptClassInfo) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
-		luaL_checkinteger(pLua,2);
-		
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	luaL_checkinteger(pLua,2);
+	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		lua_pop(pLua,1); //pop STR_DEV_UDATA
+		return -1;
+	}
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	if (pPubDev) {
 		int bIsNum;
 		int nAddr=lua_tointegerx(pLua,2,&bIsNum);
 		if (bIsNum) {
@@ -112,14 +162,18 @@ int luafunc_SetLinkAddr(lua_State *pLua)
 	}
 	return 0;
 }
-/*²ÎÊı:yc_index;·µ»ØÖµ:yx_value*/
+/*å‚æ•°:yc_index;è¿”å›å€¼:yx_value*/
 int luafunc_GetYXOne(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
-		luaL_checkinteger(pLua,2);
-		
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	luaL_checkinteger(pLua,2);
+	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		lua_pop(pLua,1); //pop STR_DEV_UDATA
+		return -1;
+	}
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	if (pPubDev) {
 		BOOL bYxValue;
 		int nYxIndex=lua_tointeger(pLua,2);
 		if (nYxIndex>0) {
@@ -131,14 +185,18 @@ int luafunc_GetYXOne(lua_State *pLua)
 	}
 	return 0;
 }
-/*²ÎÊı:yx_index;·µ»ØÖµ:yc_value*/
+/*å‚æ•°:yx_index;è¿”å›å€¼:yc_value*/
 int luafunc_GetYCOne(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
-		luaL_checkinteger(pLua,2);
-		
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	luaL_checkinteger(pLua,2);
+	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		lua_pop(pLua,1); //pop STR_DEV_UDATA
+		return -1;
+	}
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	if (pPubDev) {
 		float fYcValue=0;
 		int nYcIndex=lua_tointeger(pLua,2);
 		if (nYcIndex>0) {
@@ -150,161 +208,184 @@ int luafunc_GetYCOne(lua_State *pLua)
 	}
 	return 0;
 }
-/*²ÎÊı:yx_index,yx_value*/
+/*å‚æ•°:yx_index,yx_value*/
 int luafunc_MailYXOne(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
-		luaL_checkinteger(pLua,2);
-		luaL_checkinteger(pLua,3);
-		
-		int nYxIndex=lua_tointeger(pLua,2);
-		int nYxValue=lua_tointeger(pLua,3);
-		printf("\n MailYXOne %d %d",nYxIndex,nYxValue);
-		if (nYxIndex>0) {
-			pPubDev->ExplainYx(pPubDev,nYxIndex+1,nYxValue);
-		}
-	}
-	return 0;
-}
-/*²ÎÊı:yx_index,yx_byte*/
-int luafunc_MailYXByte(lua_State *pLua)
-{
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
-		luaL_checkinteger(pLua,2);
-		luaL_checkinteger(pLua,3);
-		
-		int nYxIndex=lua_tointeger(pLua,2);
-		BYTE byYx=(BYTE)lua_tointeger(pLua,3);
-		if (nYxIndex>0) {
-			pPubDev->ExplainYxByte(pPubDev,nYxIndex+1,byYx);
-		}
-	}
-	return 0;
-}
-/*²ÎÊı:yc_index,yc_value*/
-int luafunc_MailYCOne(lua_State *pLua)
-{
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
-		luaL_checkinteger(pLua,2);
-		luaL_checknumber(pLua,3);
-		
-		int nYcIndex=lua_tointeger(pLua,2);
-		float fValue=lua_tonumber(pLua,3);
-		//printf("\n %d %f",nYcIndex,fValue);
-		if (nYcIndex>0) {
-			pPubDev->ExplainYc(pPubDev,nYcIndex-1,fValue);	
-		}
-	}
-	return 0;
-}
-/*²ÎÊı:soe_table={year,month,day,hour,min,sec,ms,yx_point,yx_state,action_value}*/
-int luafunc_MailSOE(lua_State *pLua)
-{
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		luaL_checktype(pLua,2,LUA_TTABLE);
-		if (lua_istable(pLua,2)) {
-			CPubDev *pPubDev=pDevClass->pPubDev;
-			int bIsNum;
-			int number;
-			SOE_UNIT soe;
-			pPubDev->InitSoeUnit(pPubDev,&soe);
-			
-
-			LUA_GETINTEGER(pLua,2,"year",number,&bIsNum);
-			if (bIsNum) soe.m_Time.Year=number;
-			LUA_GETINTEGER(pLua,2,"month",number,&bIsNum);
-			if (bIsNum) soe.m_Time.Mon=number;
-			LUA_GETINTEGER(pLua,2,"day",number,&bIsNum);
-			if (bIsNum) soe.m_Time.Mday=number;
-			LUA_GETINTEGER(pLua,2,"hour",number,&bIsNum);
-			if (bIsNum) soe.m_Time.Hour=number;
-			LUA_GETINTEGER(pLua,2,"min",number,&bIsNum);
-			if (bIsNum) soe.m_Time.Min=number;
-			LUA_GETINTEGER(pLua,2,"sec",number,&bIsNum);
-			if (bIsNum) soe.m_Time.Sec=number;
-			LUA_GETINTEGER(pLua,2,"ms",number,&bIsNum);
-			if (bIsNum) soe.m_Time.MS=number;
-			
-			LUA_GETINTEGER(pLua,2,"yx_point",soe.m_nYxIndex,NULL);
-			LUA_GETINTEGER(pLua,2,"yx_value",soe.m_bYxState,NULL);
-			LUA_GETNUMBER(pLua,2,"action_value",soe.m_fValue,NULL);
-			if (soe.m_nYxIndex>0) {
-				soe.m_bYxState=soe.m_bYxState+1;
-				pPubDev->ExplainSoe(pPubDev,&soe);
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	luaL_checkinteger(pLua,2);
+	luaL_checkinteger(pLua,3);
+	if (lua_istable(pLua,1) && LUA_TLIGHTUSERDATA==lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+		if (pPubDev) {
+			int nYxIndex=lua_tointeger(pLua,2);
+			int nYxValue=lua_tointeger(pLua,3);
+			printf("\n MailYXOne %d %d",nYxIndex,nYxValue);
+			if (nYxIndex>0) {
+				pPubDev->ExplainYx(pPubDev,nYxIndex+1,nYxValue);
 			}
 		}
 	}
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	return 0;
 }
-/*²ÎÊı:yk_result*/
+/*å‚æ•°:yx_index,yx_byte*/
+int luafunc_MailYXByte(lua_State *pLua)
+{
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	luaL_checkinteger(pLua,2);
+	luaL_checkinteger(pLua,3);
+	if (lua_istable(pLua,1) && LUA_TLIGHTUSERDATA==lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+		if (pPubDev) {
+			int nYxIndex=lua_tointeger(pLua,2);
+			BYTE byYx=(BYTE)lua_tointeger(pLua,3);
+			if (nYxIndex>0) {
+				pPubDev->ExplainYxByte(pPubDev,nYxIndex+1,byYx);
+			}
+		}
+	}
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	return 0;
+}
+/*å‚æ•°:yc_index,yc_value*/
+int luafunc_MailYCOne(lua_State *pLua)
+{
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	luaL_checkinteger(pLua,2);
+	luaL_checknumber(pLua,3);
+	if (lua_istable(pLua,1) && LUA_TLIGHTUSERDATA==lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+		if (pPubDev) {
+			int nYcIndex=lua_tointeger(pLua,2);
+			float fValue=lua_tonumber(pLua,3);
+			//printf("\n %d %f",nYcIndex,fValue);
+			if (nYcIndex>0) {
+				pPubDev->ExplainYc(pPubDev,nYcIndex-1,fValue);	
+			}
+		}
+	}
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	return 0;
+}
+/*å‚æ•°:soe_table={year,month,day,hour,min,sec,ms,yx_point,yx_state,action_value}*/
+int luafunc_MailSOE(lua_State *pLua)
+{
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	luaL_checktype(pLua,2,LUA_TTABLE);
+	if (lua_istable(pLua,1) && LUA_TLIGHTUSERDATA==lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+		if (pPubDev) {
+			if (lua_istable(pLua,2)) {
+				int bIsNum;
+				int number;
+				SOE_UNIT soe;
+				pPubDev->InitSoeUnit(pPubDev,&soe);
+				
+				
+				LUA_GETINTEGER(pLua,2,"year",number,&bIsNum);
+				if (bIsNum) soe.m_Time.Year=number;
+				LUA_GETINTEGER(pLua,2,"month",number,&bIsNum);
+				if (bIsNum) soe.m_Time.Mon=number;
+				LUA_GETINTEGER(pLua,2,"day",number,&bIsNum);
+				if (bIsNum) soe.m_Time.Mday=number;
+				LUA_GETINTEGER(pLua,2,"hour",number,&bIsNum);
+				if (bIsNum) soe.m_Time.Hour=number;
+				LUA_GETINTEGER(pLua,2,"min",number,&bIsNum);
+				if (bIsNum) soe.m_Time.Min=number;
+				LUA_GETINTEGER(pLua,2,"sec",number,&bIsNum);
+				if (bIsNum) soe.m_Time.Sec=number;
+				LUA_GETINTEGER(pLua,2,"ms",number,&bIsNum);
+				if (bIsNum) soe.m_Time.MS=number;
+				
+				LUA_GETINTEGER(pLua,2,"yx_point",soe.m_nYxIndex,NULL);
+				LUA_GETINTEGER(pLua,2,"yx_value",soe.m_bYxState,NULL);
+				LUA_GETNUMBER(pLua,2,"action_value",soe.m_fValue,NULL);
+				if (soe.m_nYxIndex>0) {
+					soe.m_bYxState=soe.m_bYxState+1;
+					pPubDev->ExplainSoe(pPubDev,&soe);
+				}
+			}
+		}
+	}
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	return 0;
+}
+/*å‚æ•°:yk_result*/
 int luafunc_MailYKResult(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
-		luaL_checktype(pLua,2,LUA_TBOOLEAN);
-		BOOL bResult=lua_toboolean(pLua,2);
-		pPubDev->RespondResult_YK(pPubDev,pDevClass->YkOperation,bResult);
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	luaL_checktype(pLua,2,LUA_TBOOLEAN);
+	if (lua_istable(pLua,1) && LUA_TLIGHTUSERDATA==lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+		if (pPubDev) {
+			BOOL bResult=lua_toboolean(pLua,2);
+			pPubDev->RespondResult_YK(pPubDev,pPubDev->YkOperation,bResult);
+		}
 	}
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	return 0;
 }
-/*²ÎÊı:cmd,buffer,frame_type*/
+/*å‚æ•°:cmd,buffer,frame_type*/
 int luafunc_MakeFrame(lua_State *pLua)
 {
 	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
 	printf("\n luafunc_MakeFrame");
 	return 0;
 }
-/*²ÎÊı:buffer,recv_proc,use_frame*/
+/*å‚æ•°:buffer,recv_proc,use_frame*/
 int luafunc_Send(lua_State *pLua)
-{
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	CPubDev *pPubDev=pDevClass->pPubDev;
-	if (lua_istable(pLua,2)) {
-		char pBuffer[256];
-		int nSize=256;
-		nSize=BufferToBytes(pLua,2,pBuffer,nSize);
-		int i;
-		pPubDev->SendFrame(pPubDev,0,pBuffer[0],pBuffer+1,nSize-1,NULL);
-
-		const char *pRecvProcName=lua_tostring(pLua,3);
-		if (pRecvProcName) {
-			strcpy(pDevClass->szRecvProc,pRecvProcName);
-			pDevClass->bUseRecvProc=TRUE;
+{	
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	luaL_checktype(pLua,2,LUA_TTABLE);
+	if (lua_istable(pLua,1) && LUA_TLIGHTUSERDATA==lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+		if (pPubDev) {
+			if (lua_istable(pLua,2)) {
+				char pBuffer[256];
+				int nSize=sizeof(pBuffer);
+				nSize=BufferToBytes(pLua,2,pBuffer,nSize);
+				if (nSize>0) {
+					pPubDev->SendFrame(pPubDev,0,pBuffer[0],pBuffer+1,nSize-1,NULL);
+					
+					const char *pRecvProcName=lua_tostring(pLua,3);
+					if (pRecvProcName) {
+						strcpy(pPubDev->szRecvProc,pRecvProcName);
+						pPubDev->bUseRecvProc=TRUE;
+					}
+				}
+			}
 		}
 	}
-	else luaL_checktype(pLua,2,LUA_TTABLE);
-	
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	return 0;
 }
-/*²ÎÊı:keep_sec*/
+/*å‚æ•°:keep_sec*/
 int luafunc_SetKeepSend(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
-		int sec=lua_tointeger(pLua,2);
-		pPubDev->SetKeepSend(pPubDev,sec);
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	if (lua_istable(pLua,1) && LUA_TLIGHTUSERDATA==lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+		if (pPubDev) {
+			int sec=lua_tointeger(pLua,2);
+			pPubDev->SetKeepSend(pPubDev,sec);
+		}
 	}
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	return 0;
 }
-/*²ÎÊı:print_string*/
+/*å‚æ•°:print_string*/
 int luafunc_DebugPrint(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
+	luaL_checktype(pLua,1,LUA_TTABLE);
 	luaL_checkstring(pLua,2);
-	if (pDevClass && pDevClass->pPubDev) {
-		CPubDev *pPubDev=pDevClass->pPubDev;
-		const char *pStr=lua_tostring(pLua,2);
-		TRACE(pStr);
+	if (lua_istable(pLua,1) && LUA_TLIGHTUSERDATA==lua_getfield(pLua,1,STR_DEV_UDATA)) {
+		CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+		if (pPubDev) {
+			const char *pStr=lua_tostring(pLua,2);
+			TRACE(pStr);
+		}
 	}
+	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	return 0;
 }
 
@@ -337,9 +418,9 @@ BOOL InitScriptBaseclass(lua_State *pLua)
 	if (NULL==pLua)
 		return FALSE;
 	//////////////////////////////////////////////////////////////////////////
-	//´´½¨ScriptBaseClassÔª±í
+	//åˆ›å»ºScriptBaseClasså…ƒè¡¨
 	luaL_newmetatable(pLua, STR_SCRIPTE_BASECLASS);
-	//Ôª±í.__index=Ôª±í
+	//å…ƒè¡¨.__index=å…ƒè¡¨
 	lua_pushvalue(pLua, -1);
 	lua_setfield(pLua, -2, "__index");
 	luaL_setfuncs(pLua,funcsScriptBaseClass,0);
@@ -355,8 +436,8 @@ BOOL InitScriptBaseclass(lua_State *pLua)
 //////////////////////////////////////////////////////////////////////////
 
 /*
-ËµÃ÷:´¥·¢OnInit½Ó¿Ú
-·µ»ØÖµ:ÕÒ²»µ½OnInit½Ó¿ÚÖ±½Ó·µ»ØTRUE£¬·ñÔò·µ»ØOnInit½Ó¿ÚµÄ·µ»ØÖµ
+è¯´æ˜:è§¦å‘OnInitæ¥å£
+è¿”å›å€¼:æ‰¾ä¸åˆ°OnInitæ¥å£ç›´æ¥è¿”å›TRUEï¼Œå¦åˆ™è¿”å›OnInitæ¥å£çš„è¿”å›å€¼
 */
 int HandleOnInit(lua_State *pLua, struct _PubDev *pPubDev)
 {
@@ -370,15 +451,14 @@ int HandleOnInit(lua_State *pLua, struct _PubDev *pPubDev)
 }
 
 /*
-ËµÃ÷:´¥·¢OnSend½Ó¿Ú
-·µ»ØÖµ:ÕÒ²»µ½OnSend½Ó¿ÚÖ±½Ó·µ»ØFALSE£¬·ñÔò·µ»ØOnSend½Ó¿ÚµÄ·µ»ØÖµ
+è¯´æ˜:è§¦å‘OnSendæ¥å£
+è¿”å›å€¼:æ‰¾ä¸åˆ°OnSendæ¥å£ç›´æ¥è¿”å›FALSEï¼Œå¦åˆ™è¿”å›OnSendæ¥å£çš„è¿”å›å€¼
 */
 int HandleOnSend(lua_State *pLua, struct _PubDev *pPubDev)
 {
 	if (!pLua || !pPubDev) return -1;
 	BOOL bRet=TRUE;
 
-	printf("\n TOP=%d",lua_gettop(pLua));
 	if (CallInterface(pLua,pPubDev,"OnSend",0,1)>0) {
 		bRet=lua_toboolean(pLua,-1);
 		lua_pop(pLua, 1); //pop lua_pcall return value
@@ -387,21 +467,19 @@ int HandleOnSend(lua_State *pLua, struct _PubDev *pPubDev)
 }
 
 /*
-ËµÃ÷:´¥·¢OnRecv½Ó¿Ú
-·µ»ØÖµ:ÕÒ²»µ½OnRecv½Ó¿ÚÖ±½Ó·µ»ØTRUE£¬·ñÔò·µ»ØOnRecv½Ó¿ÚµÄ·µ»ØÖµ
+è¯´æ˜:è§¦å‘OnRecvæ¥å£
+è¿”å›å€¼:æ‰¾ä¸åˆ°OnRecvæ¥å£ç›´æ¥è¿”å›TRUEï¼Œå¦åˆ™è¿”å›OnRecvæ¥å£çš„è¿”å›å€¼
 */
 int HandleOnRecv(lua_State *pLua, struct _PubDev *pPubDev, BYTE *pBuffer, int nSize)
 {
-	if (!pLua || !pPubDev || !pPubDev->pDevScriptInstance ||  !pBuffer || nSize<=0) 
+	if (!pLua || !pPubDev ||  !pBuffer || nSize<=0) 
 		return -1;
 	BOOL bRet=TRUE;
 	BOOL bDone=FALSE;
-	printf("\n OnRecvTop1=%d",lua_gettop(pLua));
-	DEVICE_CALSS *pDevClass=(DEVICE_CALSS*)pPubDev->pDevScriptInstance;
 	if (BytesToBuffer(pLua,pBuffer,nSize)>=0) {
-		if (!bDone && pDevClass->bUseRecvProc) {
-			pDevClass->bUseRecvProc=FALSE;
-			if (CallInterface(pLua,pPubDev,pDevClass->szRecvProc,1,1)) {
+		if (!bDone && pPubDev->bUseRecvProc) {
+			pPubDev->bUseRecvProc=FALSE;
+			if (CallInterface(pLua,pPubDev,pPubDev->szRecvProc,1,1)) {
 				bRet=lua_toboolean(pLua,-1);
 				lua_pop(pLua, 1); //pop lua_pcall return value
 				bDone=TRUE;
@@ -416,13 +494,12 @@ int HandleOnRecv(lua_State *pLua, struct _PubDev *pPubDev, BYTE *pBuffer, int nS
 
 		lua_pop(pLua,1); //pop buffer
 	}
-	printf("\n OnRecvTop2=%d",lua_gettop(pLua));
 	return bRet;
 }
 
 /*
-ËµÃ÷:´¥·¢OnYkSelect/OnYkExecute½Ó¿Ú
-·µ»ØÖµ:ÕÒ²»µ½½Ó¿ÚÖ±½Ó·µ»ØFALSE£¬·ñÔò·µ»Ø½Ó¿ÚµÄ·µ»ØÖµ
+è¯´æ˜:è§¦å‘OnYkSelect/OnYkExecuteæ¥å£
+è¿”å›å€¼:æ‰¾ä¸åˆ°æ¥å£ç›´æ¥è¿”å›FALSEï¼Œå¦åˆ™è¿”å›æ¥å£çš„è¿”å›å€¼
 */
 int HandleOnYk(lua_State *pLua, struct _PubDev *pPubDev, enum yk_Kind YkKind, BYTE byYkGroup, BOOL bYkOnoff)
 {
@@ -442,8 +519,7 @@ int HandleOnYk(lua_State *pLua, struct _PubDev *pPubDev, enum yk_Kind YkKind, BY
 		return 0;
 		break;
 	}
-	DEVICE_CALSS *pDevClass=(DEVICE_CALSS*)pPubDev->pDevScriptInstance;
-	pDevClass->YkOperation=YkKind;
+	pPubDev->YkOperation=YkKind;
 	lua_pushinteger(pLua,byYkGroup);
 	lua_pushinteger(pLua,bYkOnoff);
 	if (CallInterface(pLua,pPubDev,szInterface,2,1)>0) {
@@ -455,8 +531,8 @@ int HandleOnYk(lua_State *pLua, struct _PubDev *pPubDev, enum yk_Kind YkKind, BY
 }
 
 /*
-ËµÃ÷:´¥·¢OnReset½Ó¿Ú
-·µ»ØÖµ:ÕÒ²»µ½OnReset½Ó¿ÚÖ±½Ó·µ»ØFALSE£¬·ñÔò·µ»ØOnReset½Ó¿ÚµÄ·µ»ØÖµ
+è¯´æ˜:è§¦å‘OnResetæ¥å£
+è¿”å›å€¼:æ‰¾ä¸åˆ°OnResetæ¥å£ç›´æ¥è¿”å›FALSEï¼Œå¦åˆ™è¿”å›OnResetæ¥å£çš„è¿”å›å€¼
 */
 int HandleOnReset(lua_State *pLua, struct _PubDev *pPubDev)
 {
@@ -470,8 +546,8 @@ int HandleOnReset(lua_State *pLua, struct _PubDev *pPubDev)
 }
 
 /*
-ËµÃ÷:´¥·¢OnSetTime½Ó¿Ú
-·µ»ØÖµ:ÕÒ²»µ½OnSetTime½Ó¿ÚÖ±½Ó·µ»ØFALSE£¬·ñÔò·µ»ØOnSetTime½Ó¿ÚµÄ·µ»ØÖµ
+è¯´æ˜:è§¦å‘OnSetTimeæ¥å£
+è¿”å›å€¼:æ‰¾ä¸åˆ°OnSetTimeæ¥å£ç›´æ¥è¿”å›FALSEï¼Œå¦åˆ™è¿”å›OnSetTimeæ¥å£çš„è¿”å›å€¼
 */
 int HandleOnSetTime(lua_State *pLua, struct _PubDev *pPubDev)
 {

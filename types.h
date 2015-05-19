@@ -16,7 +16,7 @@
 #define TRACE(_format,...) DEBUG_PRINT(pPubDev,_format,##__VA_ARGS__)
 
 //////////////////////////////////////////////////////////////////////////
-//¹æÔ¼Ä£¿é£¬ÓÃÓÚSetFrameModule
+//è§„çº¦æ¨¡å—ï¼Œç”¨äºSetFrameModule
 #define FRAMEMODULE_NULL NULL
 #define FRAMEMODULE_CDT "cdtframe.so"
 #define FRAMEMODULE_MODBUS "modbus.so"
@@ -24,7 +24,7 @@
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
-//Ö¡ÀàĞÍ£¬ÓÃÓÚSendFrame/InsertSendFrame/PollSendFrame/RegisterPollSendFrame
+//å¸§ç±»å‹ï¼Œç”¨äºSendFrame/InsertSendFrame/PollSendFrame/RegisterPollSendFrame
 #define FRAMETYPE_NULL 0
 #define FRAMETYPE_NORMAL 0
 #define FRAMETYPE_CDT 0
@@ -48,9 +48,9 @@ typedef struct TIME_UNIT_TAG
 typedef struct SOE_UNIT_TAG
 {
 	struct TIME_UNIT_TAG m_Time;
-	LONG m_nYxIndex;//SOEÒ£ĞÅµãºÅ
-	BOOL m_bYxState;//SOE¿ª¹Ø×´Ì¬
-	float m_fValue;//¶¯×÷Öµ£¬ÔİÎŞÓÃ
+	LONG m_nYxIndex;//SOEé¥ä¿¡ç‚¹å·
+	BOOL m_bYxState;//SOEå¼€å…³çŠ¶æ€
+	float m_fValue;//åŠ¨ä½œå€¼ï¼Œæš‚æ— ç”¨
 }SOE_UNIT;
 //////////////////////////////////////////////////////////////////////////
 struct _PubDev ;
@@ -60,7 +60,7 @@ typedef void (*DESTROY_CALLBACK)(struct _PubDev *pPubDev);
 typedef void (*RECONNECT_CALLBACK)(struct _PubDev *pPubDev);
 typedef BOOL (*INTERVALSEND_CALLBACK)(struct _PubDev *pPubDev,struct INTERVALSEND_NODE_TAG *pSendNode);
 typedef BOOL (*RECEIVE_CALLBACK)(struct _PubDev *pPubDev,BYTE *pData,int nSize);
-typedef BOOL (*YKOPERATION_CALLBACK)(struct _PubDev *pPubDev,WORD wOutPort,BOOL bOnOff);//bOnOff TRUEÎª·ÖÕ¢£¬FALSEÎªºÏÕ¢
+typedef BOOL (*YKOPERATION_CALLBACK)(struct _PubDev *pPubDev,WORD wOutPort,BOOL bOnOff);//bOnOff TRUEä¸ºåˆ†é—¸ï¼ŒFALSEä¸ºåˆé—¸
 typedef BOOL (*SETDEVICETIME_CALLBACK)(struct _PubDev* pPubDev);
 typedef BOOL (*RESETDEVICE_CALLBACK)(struct _PubDev * pPubDev);
 typedef BOOL (*READFIXEDVALUE_CALLBACK)(struct _PubDev * pPubDev,WORD wStartIdx,WORD wNum);

@@ -84,7 +84,13 @@ typedef struct _PubDev
 {
 	DeviceUnit * pDeviceUnit;
 	ChannelUnit *pChannelUnit;
-	void *pDevScriptInstance;
+	//////////////////////////////////////////////////////////////////////////
+	//LUA SCRIPT
+	void *pScriptClassInfo;
+	BOOL bUseRecvProc;
+	char szRecvProc[128];
+	enum yk_Kind YkOperation;
+	//////////////////////////////////////////////////////////////////////////
 	
 	void (*OpenRawMode)(struct _PubDev *pPubDev);
 	void (*SetFrameModule)(struct _PubDev *pPubDev,const char szFrameModbulName[256]);

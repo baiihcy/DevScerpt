@@ -6,6 +6,7 @@
 #ifndef H_LUASCRIPT
 #define H_LUASCRIPT
 #define STR_DEV_SCRIPT "DevScript"
+#define STR_DEV_UDATA "dev_udata"
 #define STR_SCRIPTE_BASECLASS "script_baseclass"
 #define STR_SCRIPT_CLASS "script_class"
 #define STR_DEVS_INSTANCE "devs_instance"
