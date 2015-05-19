@@ -37,4 +37,4 @@ typedef struct DATA_PROCESS_TAG
 #define SetRegisterValue SetWordValue
 #define SetRegisterValueByByte SetWordValueByByte
 
-extern DATA_PROCESS g_DP;//鍏ㄥ眬 鏁版嵁澶勭悊瀵硅薄锛屽垵濮嬪寲浠ｇ爜鍦―ataProcess.c
+extern DATA_PROCESS g_DP;//全局 数据处理对象，初始化代码在DataProcess.c

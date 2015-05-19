@@ -37,8 +37,8 @@ void ScriptName2ClassName(const char *szScriptName,char szClassName[128])
 }
 //////////////////////////////////////////////////////////////////////////
 /*
-å°†devscriptbase.luaè„šæœ¬ä¸­ functiong new_buffer åˆ›å»ºçš„table è½¬æ¢ä¸ºå­—èŠ‚æ•°ç»„
-indexç´¢å¼•æŒ‡å®štableåœ¨å¤„æ ˆä¸­ä½ç½®
+½«devscriptbase.lua½Å±¾ÖĞ functiong new_buffer ´´½¨µÄtable ×ª»»Îª×Ö½ÚÊı×é
+indexË÷ÒıÖ¸¶¨tableÔÚ´¦Õ»ÖĞÎ»ÖÃ
 */
 int BufferToBytes(lua_State *pLua,int index,BYTE *pBuffer,int nSize)
 {
@@ -75,8 +75,8 @@ int BufferToBytes(lua_State *pLua,int index,BYTE *pBuffer,int nSize)
 }
 
 /*
-å°†å­—èŠ‚æ•°ç»„è½¬æ¢ä¸ºdevscriptbase.luaè„šæœ¬ä¸­ functiong new_buffer åˆ›å»ºçš„table
-è¿”å›å€¼:åˆ›å»ºæˆåŠŸåˆ™æŠŠtableå‹å…¥luaæ ˆä¸­å¹¶è¿”å›nSizeï¼Œå¦åˆ™ä¸åšä»»ä½•æ“ä½œå¹¶è¿”å›-1
+½«×Ö½ÚÊı×é×ª»»Îªdevscriptbase.lua½Å±¾ÖĞ functiong new_buffer ´´½¨µÄtable
+·µ»ØÖµ:´´½¨³É¹¦Ôò°ÑtableÑ¹ÈëluaÕ»ÖĞ²¢·µ»ØnSize£¬·ñÔò²»×öÈÎºÎ²Ù×÷²¢·µ»Ø-1
 */
 int BytesToBuffer(lua_State *pLua,BYTE *pBuffer,int nSize)
 {
@@ -122,7 +122,7 @@ lua_State* InitLua()
 	
 	if (luaL_dofile(pLua,"devices/devscriptbase.lua")!=LUA_OK)
 	{
-		printf("åŠ è½½ devices/devscriptbase.lua å¤±è´¥!\n");
+		printf("¼ÓÔØ devices/devscriptbase.lua Ê§°Ü!\n");
 		return NULL;
 	}
 	
@@ -139,19 +139,19 @@ lua_State* InitLua()
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	//æ³¨å†Œtable ScriptClass
+	//×¢²átable ScriptClass
 	lua_newtable(pLua);
 	lua_setfield(pLua, LUA_REGISTRYINDEX, STR_SCRIPT_CLASS);
 	//////////////////////////////////////////////////////////////////////////
 	
 	//////////////////////////////////////////////////////////////////////////
-	//æ³¨å†Œtable DevsInstance 
+	//×¢²átable DevsInstance 
 	lua_newtable(pLua);
 	lua_setfield(pLua, LUA_REGISTRYINDEX, STR_DEVS_INSTANCE);
 	//////////////////////////////////////////////////////////////////////////
 	
 	//////////////////////////////////////////////////////////////////////////
-	//æ³¨å†Œtable å›è°ƒå‡½æ•°æ•°ç»„
+	//×¢²átable »Øµ÷º¯ÊıÊı×é
 	lua_newtable(pLua);
 	lua_setfield(pLua, LUA_REGISTRYINDEX, STR_CALLBACK);
 	//////////////////////////////////////////////////////////////////////////
@@ -159,16 +159,16 @@ lua_State* InitLua()
 }
 
 /*
-ä½œç”¨:åˆ›å»ºè„šæœ¬ç±»å¹¶è¿”å›è„šæœ¬ç±»ä¿¡æ¯
-å‚æ•°:pLua:LUAçŠ¶æ€æœºï¼ŒszScriptClassName:
-è¿”å›å€¼:å¦‚æœåˆ›å»ºæˆåŠŸæˆ–å·²ç»è„šæœ¬ç±»å­˜åœ¨åˆ™è¿”å›è„šæœ¬ç±»ä¿¡æ¯æŒ‡é’ˆï¼Œå¦åˆ™è¿”å›NULL
+×÷ÓÃ:´´½¨½Å±¾Àà²¢·µ»Ø½Å±¾ÀàĞÅÏ¢
+²ÎÊı:pLua:LUA×´Ì¬»ú£¬szScriptClassName:
+·µ»ØÖµ:Èç¹û´´½¨³É¹¦»òÒÑ¾­½Å±¾Àà´æÔÚÔò·µ»Ø½Å±¾ÀàĞÅÏ¢Ö¸Õë£¬·ñÔò·µ»ØNULL
 */
 SCRIPT_CLASS_INFO* CreateScriptClass(lua_State *pLua, char *szScriptClassName)
 {
 	if (!pLua || !szScriptClassName)
 		return NULL;
 	SCRIPT_CLASS_INFO* pScriptClassInfo=GetScriptClassInfo(szScriptClassName);
-	if (pScriptClassInfo) //å·²ç»å­˜åœ¨ï¼Œä¸éœ€è¦é‡æ–°åŠ è½½
+	if (pScriptClassInfo) //ÒÑ¾­´æÔÚ£¬²»ĞèÒªÖØĞÂ¼ÓÔØ
 		return pScriptClassInfo;
 
 	/*
@@ -177,12 +177,12 @@ SCRIPT_CLASS_INFO* CreateScriptClass(lua_State *pLua, char *szScriptClassName)
 
 	BOOL bHasExist = !(lua_isnil(pLua, -1));
 	lua_pop(pLua, 1); //pop szScriptClassName
-	if (bHasExist) //è„šæœ¬ç±»åç§°å·²å­˜åœ¨
+	if (bHasExist) //½Å±¾ÀàÃû³ÆÒÑ´æÔÚ
 		return 1;
 	*/
 
 	//TOP = STR_SCRIPT_CLASS
-	//ä¿å­˜æ¥å£å¹¶è®¾ç½®å…ƒè¡¨ä¸ºScriptBaseClass
+	//±£´æ½Ó¿Ú²¢ÉèÖÃÔª±íÎªScriptBaseClass
 	if (lua_getglobal(pLua,STR_DEV_SCRIPT)==LUA_TNIL) {
 		lua_pop(pLua, 1); //pop DevScript
 		return 0;
@@ -193,7 +193,7 @@ SCRIPT_CLASS_INFO* CreateScriptClass(lua_State *pLua, char *szScriptClassName)
 	lua_setmetatable(pLua,-2);
 
 	//TOP = szScriptClassName
-	//æ³¨å†Œå…ƒè¡¨
+	//×¢²áÔª±í
 	if (luaL_newmetatable(pLua, szScriptClassName)) {
 		lua_pushvalue(pLua,-2);
 		lua_setfield(pLua, -2, "__index");
@@ -219,7 +219,7 @@ int LoadDevScript(lua_State *pLua, struct _PubDev *pPubDev, char *szScriptName)
 	ScriptName2ClassName(szScriptName,szClassName);
 	SCRIPT_CLASS_INFO *pScriptClassInfo=GetScriptClassInfo(szClassName);
 	
-	if (NULL==pScriptClassInfo) /*æœªæ›¾åŠ è½½*/ {
+	if (NULL==pScriptClassInfo) /*Î´Ôø¼ÓÔØ*/ {
 		char szFileName[255];
 		sprintf(szFileName,"devices/%s",szScriptName);
 		if (luaL_dofile(pLua,szFileName)!=LUA_OK)
@@ -259,8 +259,8 @@ int LoadDevScript(lua_State *pLua, struct _PubDev *pPubDev, char *szScriptName)
 }
 
 /*
-è¯´æ˜:è°ƒç”¨è£…ç½®æ¥å£ï¼Œè°ƒç”¨å‰éœ€è¦å…ˆæŠŠå‚æ•°å‹æ ˆï¼›è°ƒç”¨æˆåŠŸåç»“æœä¼šå‹æ ˆ
-è¿”å›å€¼:å¦‚æœè°ƒç”¨æˆåŠŸåˆ™è¿”å›1;å¦‚æœæ‰¾ä¸åˆ°æ¥å£åˆ™è¿”å›0;å‡ºé”™åˆ™è¿”å›-1
+ËµÃ÷:µ÷ÓÃ×°ÖÃ½Ó¿Ú£¬µ÷ÓÃÇ°ĞèÒªÏÈ°Ñ²ÎÊıÑ¹Õ»£»µ÷ÓÃ³É¹¦ºó½á¹û»áÑ¹Õ»
+·µ»ØÖµ:Èç¹ûµ÷ÓÃ³É¹¦Ôò·µ»Ø1;Èç¹ûÕÒ²»µ½½Ó¿ÚÔò·µ»Ø0;³ö´íÔò·µ»Ø-1
 */
 int CallInterface(lua_State *pLua, struct _PubDev *pPubDev, const char *szInterfce, int nArg, int nResult)
 {
@@ -280,7 +280,7 @@ int CallInterface(lua_State *pLua, struct _PubDev *pPubDev, const char *szInterf
 					lua_pushvalue(pLua,-(4+nArg));
 			}
 			printf("\nCall Interface[%s]\n",szInterfce);
-			lua_pcall(pLua, 1+nArg, nResult, 0);
+			lua_call(pLua, 1+nArg, nResult);
 			iRet=1;
 		}
 		else lua_pop(pLua, 1); //pop szInterfce

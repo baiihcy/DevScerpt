@@ -3,13 +3,13 @@
 #include "luascript.h"
 #include "scriptif.h"
 
-// BOOL PREPOLLING_CALLBACK(struct _PubDev *pPubDev)//Pollingå›žè°ƒå‡½æ•°
-// BOOL RECEIVE_CALLBACK(struct _PubDev *pPubDev,BYTE *pRecv,int nSize)//æŠ¥æ–‡æŽ¥æ”¶å›žè°ƒå‡½æ•°
-// BOOL INTERVALSEND_CALLBACK(struct _PubDev *pPubDev,INTERVALSEND_LIST_NODE *pSendNode)//é—´éš”å‘é€å›žè°ƒæŠ¥æ–‡
-// BOOL YKOPERATION_CALLBACK(struct _PubDev *pPubDev,WORD wOutPort,BOOL bOnOff)//é¥æŽ§æ“ä½œå›žè°ƒå‡½æ•° bOnOff TRUEä¸ºåˆ†é—¸ï¼ŒFALSEä¸ºåˆé—¸
-// BOOL SETDEVICETIME_CALLBACK(struct _PubDev * pPubDev)//è£…ç½®å¯¹æ—¶å›žè°ƒå‡½æ•°
-// BOOL RESETDEVICE_CALLBACK(struct _PubDev * pPubDev)//è£…ç½®å¤å½’å›žè°ƒå‡½æ•°
-// g_DP æ•°æ®å¤„ç†å¯¹è±¡ï¼Œç›´æŽ¥ä½¿ç”¨å³å¯
+// BOOL PREPOLLING_CALLBACK(struct _PubDev *pPubDev)//Polling»Øµ÷º¯Êý
+// BOOL RECEIVE_CALLBACK(struct _PubDev *pPubDev,BYTE *pRecv,int nSize)//±¨ÎÄ½ÓÊÕ»Øµ÷º¯Êý
+// BOOL INTERVALSEND_CALLBACK(struct _PubDev *pPubDev,INTERVALSEND_LIST_NODE *pSendNode)//¼ä¸ô·¢ËÍ»Øµ÷±¨ÎÄ
+// BOOL YKOPERATION_CALLBACK(struct _PubDev *pPubDev,WORD wOutPort,BOOL bOnOff)//Ò£¿Ø²Ù×÷»Øµ÷º¯Êý bOnOff TRUEÎª·ÖÕ¢£¬FALSEÎªºÏÕ¢
+// BOOL SETDEVICETIME_CALLBACK(struct _PubDev * pPubDev)//×°ÖÃ¶ÔÊ±»Øµ÷º¯Êý
+// BOOL RESETDEVICE_CALLBACK(struct _PubDev * pPubDev)//×°ÖÃ¸´¹é»Øµ÷º¯Êý
+// g_DP Êý¾Ý´¦Àí¶ÔÏó£¬Ö±½ÓÊ¹ÓÃ¼´¿É
 lua_State *g_pLua=NULL;
 BOOL PrePolling(struct _PubDev *pPubDev)
 {
@@ -37,7 +37,7 @@ BOOL YkExecute(struct _PubDev *pPubDev,WORD wOutPort,BOOL bOnOff)
 }
 BOOL InitCommunication(struct _PubDev *pPubDev)
 {
-	pPubDev->SetFrameModule(pPubDev,FRAMEMODULE_MODBUS);//ä½¿ç”¨MODBUSè§„çº¦æ¨¡å—
+	pPubDev->SetFrameModule(pPubDev,FRAMEMODULE_MODBUS);//Ê¹ÓÃMODBUS¹æÔ¼Ä£¿é
 	pPubDev->RegisterPrePolling(pPubDev,PrePolling);
 	pPubDev->RegisterDefaultRecvCallback(pPubDev,DefaultRecv);
 	pPubDev->RegisterResetDevice(pPubDev,ResetDevice);
