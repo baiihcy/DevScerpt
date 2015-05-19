@@ -84,10 +84,11 @@ typedef struct _PubDev
 {
 	DeviceUnit * pDeviceUnit;
 	ChannelUnit *pChannelUnit;
+	void *pDevScriptInstance;
 	
 	void (*OpenRawMode)(struct _PubDev *pPubDev);
 	void (*SetFrameModule)(struct _PubDev *pPubDev,const char szFrameModbulName[256]);
-
+	
 	void (*RegisterYkSelect)(struct _PubDev *pPubDev,YKSELECT_CALLBACK pfnYkSelect);
 	void (*RegisterYkExecute)(struct _PubDev *pPubDev,YKEXECUTE_CALLBACK pfnYkExcute);
 	void (*RegisterYkCancel)(struct _PubDev *pPubDev,YKCANCEL_CALLBACK pfnYkCancel);
@@ -103,6 +104,7 @@ typedef struct _PubDev
 	SENDFRAME_LIST_NODE* (*RegisterPollSendFrame_ModbusAsk)(struct _PubDev *pPubDev,BYTE byCmd, WORD wRegAddr,WORD wRegNum,RECEIVE_CALLBACK pfnRecvCallBack);
 	BOOL (*DestroyPollSendFrame)(struct _PubDev *pPubDev,SENDFRAME_LIST *pPollSendFrameNode);
 	void (*RegisterOnDestroy)(struct _PubDev *pPubDev,DESTROY_CALLBACK pfnOnDestroy);
+	void (*RegisterOnReconnect)(struct _PubDev *pPubDev,DESTROY_CALLBACK pfnOnDestroy);
 
 	INTERVALSEND_LIST_NODE* (*RegisterIntervalSend)(struct _PubDev *pPubDev,BOOL bOnceOnly,WORD wIntervalSec,INTERVALSEND_CALLBACK pfnIntervalSendCallBack);
 	BOOL (*DestroyIntervalSend)(struct _PubDev *pPubDev,INTERVALSEND_LIST_NODE *pIntervalSendListNode);
@@ -111,6 +113,7 @@ typedef struct _PubDev
 	
 	BOOL (*PollSendFrame)(struct _PubDev *pPubDev,BYTE byFrameType,BYTE byCmd, BYTE *pSend,WORD wSize,RECEIVE_CALLBACK pfnRecvCallBack);
 	BOOL (*InsertSendFrame)(struct _PubDev *pPubDev,BYTE byFrameType,BYTE byCmd, BYTE *pSend,WORD wSize,RECEIVE_CALLBACK pfnRecvCallBack);
+	void (*ClearInsertSendFrame)(struct _PubDev *pPubDev);
 	BOOL (*SendFrame)(struct _PubDev *pPubDev,BYTE byFrameType,BYTE byCmd, BYTE *pSend,WORD wSize,RECEIVE_CALLBACK pfnRecvCallBack);
 	BOOL (*SendFrame_ModbusAsk)(struct _PubDev *pPubDev,BYTE byCmd, WORD wRegAddr,WORD wRegNum,RECEIVE_CALLBACK pfnRecvCallBack);
 
@@ -150,6 +153,7 @@ typedef struct _PubDev
 	BOOL m_bRawMode;
 	BOOL m_bInitComplete;
 	BYTE m_byRecvFrameType;
+	BOOL m_bConnectionState;
 	BOOL m_bCache_FixValue_Writing;
 	BYTE m_byCache_FixValue_QH;
 	
@@ -165,6 +169,7 @@ typedef struct _PubDev
 	BOOL (*SetDeviceTime)(struct _PubDev* pPubDev);
 	BOOL (*ResetDeviceStatus)(struct _PubDev * pPubDev);
 	void (*OnDestroy)(struct _PubDev *pPubDev);
+	void (*OnReconnect)(struct _PubDev *pPubDev);
 	//////////////////////////////////////////////////////////////////////////
 	
 	DWORD m_nRegisteredPollCount;

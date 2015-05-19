@@ -173,6 +173,11 @@ static inline void RegisterOnDestroy(struct _PubDev *pPubDev,DESTROY_CALLBACK pf
 	pPubDev->OnDestroy=pfnOnDestroy;
 }
 
+static inline void RegisterOnReconnect(struct _PubDev *pPubDev,DESTROY_CALLBACK pfnOnReconnect)
+{
+	pPubDev->OnReconnect=pfnOnReconnect;
+}
+
 static SENDFRAME_LIST_NODE* RegisterPollSendFrame(struct _PubDev *pPubDev,BYTE byFrameType,BYTE byCmd, BYTE *pData,WORD wSize,RECEIVE_CALLBACK pfnRecvCallBack)
 {
 	SENDFRAME_LIST_NODE *pPollSendFrameNode;
@@ -500,7 +505,19 @@ static BOOL InsertSendFrame(struct _PubDev *pPubDev,BYTE byFrameType,BYTE byCmd,
 		pDeviceUnit->ComanndData(pDeviceUnit,byCmd,pData,wSize,byFrameType,0,TRUE,eCid_InsertSendFrame);//ฒๅึก
 	DEBUG_PRINT(pPubDev,"Insert Frame!!!");
 	return TRUE;
+}
 
+static inline void ClearInsertSendFrame(struct _PubDev *pPubDev)
+{
+	SENDFRAME_LIST_NODE *pTmp=pPubDev->m_pInsertSendFrame_Head,*pTmp2;
+	pPubDev->m_pInsertSendFrame_Head=NULL;
+	while (pTmp)
+	{
+		pTmp2=pTmp;
+		pTmp=pTmp2->m_pNext;
+		free(pTmp2->m_PollSendFrameInfo.m_pData);
+		free(pTmp2);
+	}
 }
 
 static inline BOOL SendFrame(struct _PubDev *pPubDev,BYTE byFrameType,BYTE byCmd, BYTE *pSend,WORD wSize,RECEIVE_CALLBACK pfnRecvCallBack)
@@ -545,7 +562,7 @@ static inline void ExplainYx(struct _PubDev *pPubDev,WORD wYxindex,BOOL bOnoff)
 	YX_DELAY_EXPLAIN_NODE* pNode;
 	if (pNode=pPubDev->FindYxDelayExplainNode(pPubDev,wYxindex))
 	{
-		pPubDev->DeleteYxDelayExplainNode(pNode);
+		pPubDev->DeleteYxDelayExplainNode(pPubDev,pNode);
 	}
 }
 static void InsertYxDelayExplainNode(struct _PubDev *pPubDev,YX_DELAY_EXPLAIN_NODE InsertionNode)
@@ -1042,7 +1059,12 @@ static BOOL ExplainLinkData(struct _DeviceUnit * pDeviceUnit,BYTE *pBuf,WORD byS
 			pPubDev->DestroyIntervalSend(pPubDev,pPubDev->m_pIntervalSend_Now);
 		pPubDev->m_pIntervalSend_Now=NULL;
 	}
-	
+
+	if (bRet && !pPubDev->m_bConnectionState && pPubDev->OnReconnect)
+	{
+		pPubDev->m_bConnectionState=TRUE;
+		pPubDev->OnReconnect(pPubDev);
+	}
 	return bRet;
 }
 
@@ -1068,6 +1090,9 @@ static BOOL RunPolling(struct _DeviceUnit * pDeviceUnit)
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////
+	if (pPubDev->pDeviceUnit->m_bBreakStatus)
+		pPubDev->m_bConnectionState=FALSE;
+		
 	pPubDev->m_bInPollingSend=TRUE;
 	if (pPubDev->IntervalSend_Polling && pPubDev->IntervalSend_Polling(pPubDev))
 	{
@@ -1126,6 +1151,7 @@ static void InitPubDevDev(CPubDev	* pPubDev)
 
 		pPubDev->RegisterPrePolling=RegisterPrePolling;
 		pPubDev->RegisterOnDestroy=RegisterOnDestroy;
+		pPubDev->RegisterOnReconnect=RegisterOnReconnect;
 		pPubDev->RegisterDefaultRecvCallback=RegisterDefaultRecvCallback;
 		pPubDev->RegisterPollSendFrame=RegisterPollSendFrame;
 		pPubDev->RegisterPollSendFrame_ModbusAsk=RegisterPollSendFrame_ModbusAsk;
@@ -1136,6 +1162,7 @@ static void InitPubDevDev(CPubDev	* pPubDev)
 
 		pPubDev->PollSendFrame=PollSendFrame;
 		pPubDev->InsertSendFrame=InsertSendFrame;
+		pPubDev->ClearInsertSendFrame=ClearInsertSendFrame;
 		pPubDev->SendFrame=SendFrame;
 		pPubDev->SendFrame_ModbusAsk=SendFrame_ModbusAsk;
 		
@@ -1184,7 +1211,6 @@ void InitExDevice(void* pbyDeviceUnit,void *pbyIoGlobal)
 	DeviceUnit * pDeviceUnit=(DeviceUnit*)pbyDeviceUnit;
 	if(pDeviceUnit)
 	{
-
 		CPubDev	* pPubDev=(CPubDev*)malloc(sizeof(CPubDev));
 		InitPubDevDev(pPubDev);
 

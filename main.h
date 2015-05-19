@@ -11,4 +11,5 @@ extern BOOL InitCommunication(struct _PubDev *);
 
 typedef struct DEVICE_VARIABLES_TAG
 {
+	void* pDevScriptInstance;
 }DEVICE_VARIABLES;

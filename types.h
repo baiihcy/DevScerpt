@@ -57,6 +57,7 @@ struct _PubDev ;
 struct INTERVALSEND_NODE_TAG;
 typedef BOOL (*PREPOLLING_CALLBACK)(struct _PubDev *pPubDev);
 typedef void (*DESTROY_CALLBACK)(struct _PubDev *pPubDev);
+typedef void (*RECONNECT_CALLBACK)(struct _PubDev *pPubDev);
 typedef BOOL (*INTERVALSEND_CALLBACK)(struct _PubDev *pPubDev,struct INTERVALSEND_NODE_TAG *pSendNode);
 typedef BOOL (*RECEIVE_CALLBACK)(struct _PubDev *pPubDev,BYTE *pData,int nSize);
 typedef BOOL (*YKOPERATION_CALLBACK)(struct _PubDev *pPubDev,WORD wOutPort,BOOL bOnOff);//bOnOff TRUE为分闸，FALSE为合闸
