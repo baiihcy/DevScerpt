@@ -211,7 +211,7 @@ SCRIPT_CLASS_INFO* CreateScriptClass(lua_State *pLua, char *szScriptClassName)
 }
 
 
-int LoadDevScript(lua_State *pLua, struct _PubDev *pPubDev, char *szScriptName)
+int LoadDevScript(lua_State *pLua, struct DEV_CLASS *pPubDev, char *szScriptName)
 {
 	if (!pLua || pPubDev==NULL || szScriptName==NULL) 
 		return -1;
@@ -262,7 +262,7 @@ int LoadDevScript(lua_State *pLua, struct _PubDev *pPubDev, char *szScriptName)
 说明:调用装置接口，调用前需要先把参数压栈；调用成功后结果会压栈
 返回值:如果调用成功则返回1;如果找不到接口则返回0;出错则返回-1
 */
-int CallInterface(lua_State *pLua, struct _PubDev *pPubDev, const char *szInterfce, int nArg, int nResult)
+int CallInterface(lua_State *pLua, struct DEV_CLASS *pPubDev, const char *szInterfce, int nArg, int nResult)
 {
 	if (!pLua || !pPubDev || !szInterfce || nArg<0) return -1;
 	int DevInstanceKey = pPubDev->Get_DeviceNo(pPubDev);

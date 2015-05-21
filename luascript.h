@@ -34,7 +34,7 @@ typedef struct SCRIPT_CLASS_INFO {
 }SCRIPT_CLASS_INFO;
 
 typedef struct DEVICE_CALSS {
-	struct _PubDev *pPubDev;
+	struct DEV_CLASS *pPubDev;
 	struct SCRIPT_CLASS_INFO *pScriptClassInfo;
 	BOOL bUseRecvProc;
 	char szRecvProc[128];
@@ -43,8 +43,8 @@ typedef struct DEVICE_CALSS {
 
 lua_State* InitLua();
 SCRIPT_CLASS_INFO* CreateScriptClass(lua_State *pLua, char *szScriptClassName);
-int LoadDevScript(lua_State *pLua,struct _PubDev *pPubDev, char *szScriptName);
-int CallInterface(lua_State *pLua,struct _PubDev *pPubDev,const char *szInterfce, int nArg, int nResult);
+int LoadDevScript(lua_State *pLua,struct DEV_CLASS *pPubDev, char *szScriptName);
+int CallInterface(lua_State *pLua,struct DEV_CLASS *pPubDev,const char *szInterfce, int nArg, int nResult);
 int BufferToBytes(lua_State *pLua,int index,BYTE *pBuffer,int nSize);
 int BytesToBuffer(lua_State *pLua,BYTE *pBuffer,int nSize);
 

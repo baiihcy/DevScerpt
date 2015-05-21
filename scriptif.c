@@ -319,7 +319,7 @@ int luafunc_MailYKResult(lua_State *pLua)
 		CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 		if (pPubDev) {
 			BOOL bResult=lua_toboolean(pLua,2);
-			pPubDev->RespondResult_YK(pPubDev,pPubDev->YkOperation,bResult);
+			pPubDev->RespondResult_YK(pPubDev,pPubDev->m_LastYkKind,bResult);
 		}
 	}
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
@@ -345,11 +345,11 @@ int luafunc_Send(lua_State *pLua)
 				int nSize=sizeof(pBuffer);
 				nSize=BufferToBytes(pLua,2,pBuffer,nSize);
 				if (nSize>0) {
-					pPubDev->SendFrame(pPubDev,0,pBuffer[0],pBuffer+1,nSize-1,NULL);
+					pPubDev->SendFrame(pPubDev,pBuffer,nSize,NULL,FALSE);
 					
 					const char *pRecvProcName=lua_tostring(pLua,3);
 					if (pRecvProcName) {
-						strcpy(pPubDev->szRecvProc,pRecvProcName);
+						COPY_LUA_CALLBACK(pPubDev->szRecvProc,pRecvProcName);
 						pPubDev->bUseRecvProc=TRUE;
 					}
 				}
@@ -439,7 +439,7 @@ BOOL InitScriptBaseclass(lua_State *pLua)
 说明:触发OnInit接口
 返回值:找不到OnInit接口直接返回TRUE，否则返回OnInit接口的返回值
 */
-int HandleOnInit(lua_State *pLua, struct _PubDev *pPubDev)
+int HandleOnInit(lua_State *pLua, struct DEV_CLASS *pPubDev)
 {
 	if (!pLua || !pPubDev) return -1;
 	BOOL bRet=TRUE;
@@ -454,12 +454,16 @@ int HandleOnInit(lua_State *pLua, struct _PubDev *pPubDev)
 说明:触发OnSend接口
 返回值:找不到OnSend接口直接返回FALSE，否则返回OnSend接口的返回值
 */
-int HandleOnSend(lua_State *pLua, struct _PubDev *pPubDev)
+int HandleOnSend( lua_State *pLua, struct DEV_CLASS *pPubDev, LUA_SEND_CALLBACK pSendCallback )
 {
 	if (!pLua || !pPubDev) return -1;
 	BOOL bRet=TRUE;
-
-	if (CallInterface(pLua,pPubDev,"OnSend",0,1)>0) {
+	LUA_SEND_CALLBACK pInterface;
+	if (pSendCallback)
+		strcpy(pInterface,pSendCallback);
+	else
+		strcpy(pInterface,"OnSend");
+	if (CallInterface(pLua,pPubDev,pInterface,0,1)>0) {
 		bRet=lua_toboolean(pLua,-1);
 		lua_pop(pLua, 1); //pop lua_pcall return value
 	}
@@ -470,10 +474,15 @@ int HandleOnSend(lua_State *pLua, struct _PubDev *pPubDev)
 说明:触发OnRecv接口
 返回值:找不到OnRecv接口直接返回TRUE，否则返回OnRecv接口的返回值
 */
-int HandleOnRecv(lua_State *pLua, struct _PubDev *pPubDev, BYTE *pBuffer, int nSize)
+int HandleOnRecv( lua_State *pLua,struct DEV_CLASS *pPubDev,LUA_RECV_CALLBACK pRecvCallback, BYTE *pBuffer, int nSize )
 {
 	if (!pLua || !pPubDev ||  !pBuffer || nSize<=0) 
 		return -1;
+	LUA_RECV_CALLBACK pInterface;
+	if (pRecvCallback)
+		strcpy(pInterface,pRecvCallback);
+	else 
+		strcpy(pInterface,"OnRecv");
 	BOOL bRet=TRUE;
 	BOOL bDone=FALSE;
 	if (BytesToBuffer(pLua,pBuffer,nSize)>=0) {
@@ -486,7 +495,7 @@ int HandleOnRecv(lua_State *pLua, struct _PubDev *pPubDev, BYTE *pBuffer, int nS
 			}
 		}
 
-		if (!bDone && CallInterface(pLua,pPubDev,"OnRecv",1,1)>0) {
+		if (!bDone && CallInterface(pLua,pPubDev,pInterface,1,1)>0) {
 			bRet=lua_toboolean(pLua,-1);
 			lua_pop(pLua, 1); //pop lua_pcall return value
 			bDone=TRUE;
@@ -501,7 +510,7 @@ int HandleOnRecv(lua_State *pLua, struct _PubDev *pPubDev, BYTE *pBuffer, int nS
 说明:触发OnYkSelect/OnYkExecute接口
 返回值:找不到接口直接返回FALSE，否则返回接口的返回值
 */
-int HandleOnYk(lua_State *pLua, struct _PubDev *pPubDev, enum yk_Kind YkKind, BYTE byYkGroup, BOOL bYkOnoff)
+int HandleOnYk(lua_State *pLua, struct DEV_CLASS *pPubDev, enum yk_Kind YkKind, BYTE byYkGroup, BOOL bYkOnoff)
 {
 	if (!pLua || !pPubDev) return -1;
 	BOOL bRet=FALSE;
@@ -519,7 +528,7 @@ int HandleOnYk(lua_State *pLua, struct _PubDev *pPubDev, enum yk_Kind YkKind, BY
 		return 0;
 		break;
 	}
-	pPubDev->YkOperation=YkKind;
+	pPubDev->m_LastYkKind=YkKind;
 	lua_pushinteger(pLua,byYkGroup);
 	lua_pushinteger(pLua,bYkOnoff);
 	if (CallInterface(pLua,pPubDev,szInterface,2,1)>0) {
@@ -534,7 +543,7 @@ int HandleOnYk(lua_State *pLua, struct _PubDev *pPubDev, enum yk_Kind YkKind, BY
 说明:触发OnReset接口
 返回值:找不到OnReset接口直接返回FALSE，否则返回OnReset接口的返回值
 */
-int HandleOnReset(lua_State *pLua, struct _PubDev *pPubDev)
+int HandleOnReset(lua_State *pLua, struct DEV_CLASS *pPubDev)
 {
 	if (!pLua || !pPubDev) return -1;
 	BOOL bRet=FALSE;
@@ -549,7 +558,7 @@ int HandleOnReset(lua_State *pLua, struct _PubDev *pPubDev)
 说明:触发OnSetTime接口
 返回值:找不到OnSetTime接口直接返回FALSE，否则返回OnSetTime接口的返回值
 */
-int HandleOnSetTime(lua_State *pLua, struct _PubDev *pPubDev)
+int HandleOnSetTime(lua_State *pLua, struct DEV_CLASS *pPubDev)
 {
 	if (!pLua || !pPubDev) return -1;
 	BOOL bRet=FALSE;

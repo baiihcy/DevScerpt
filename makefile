@@ -6,10 +6,10 @@ LDFLAGS= -shared -L/usr/local/arm/lib
 DEVNAME= luadev.so
 all: $(DEVNAME) 
 	
-SRC= dev.c main.c DataProcess.c luascript.c scriptif.c
+SRC= trlist.c sendlist.c dev.c main.c DataProcess.c luascript.c scriptif.c
 TGT=$(SRC:.c=.o) ../../../txj/libio.o
 
-$(SRC):types.h dev.h main.h DataProcess.h luascript.h scriptif.h
+$(SRC):types.h trlist.h sendlist.h dev.h main.h DataProcess.h luascript.h scriptif.h
 	@touch $@
 
 clean:

@@ -11,31 +11,31 @@
 // BOOL RESETDEVICE_CALLBACK(struct _PubDev * pPubDev)//装置复归回调函数
 // g_DP 数据处理对象，直接使用即可
 lua_State *g_pLua=NULL;
-BOOL PrePolling(struct _PubDev *pPubDev)
+BOOL PrePolling(struct DEV_CLASS *pPubDev)
 {
-	return HandleOnSend(g_pLua,pPubDev);
+	return HandleOnSend(g_pLua,pPubDev,NULL);
 }
-BOOL DefaultRecv(struct _PubDev *pPubDev,BYTE *pRecv,int nSize)
+BOOL DefaultRecv(struct DEV_CLASS *pPubDev,BYTE *pRecv,int nSize)
 {
-	return HandleOnRecv(g_pLua,pPubDev,pRecv,nSize);
+	return HandleOnRecv(g_pLua,pPubDev,NULL,pRecv,nSize);
 }
-BOOL ResetDevice(struct _PubDev * pPubDev)
+BOOL ResetDevice(struct DEV_CLASS * pPubDev)
 {
 	return HandleOnReset(g_pLua,pPubDev);
 }
-BOOL SetTime(struct _PubDev * pPubDev)
+BOOL SetTime(struct DEV_CLASS * pPubDev)
 {
 	return HandleOnSetTime(g_pLua,pPubDev);
 }
-BOOL YkSelect(struct _PubDev *pPubDev,WORD wOutPort,BOOL bOnOff)
+BOOL YkSelect(struct DEV_CLASS *pPubDev,WORD wOutPort,BOOL bOnOff)
 {
 	return HandleOnYk(g_pLua,pPubDev,k_Select,wOutPort,bOnOff);
 }
-BOOL YkExecute(struct _PubDev *pPubDev,WORD wOutPort,BOOL bOnOff)
+BOOL YkExecute(struct DEV_CLASS *pPubDev,WORD wOutPort,BOOL bOnOff)
 {
 	return HandleOnYk(g_pLua,pPubDev,k_Execute,wOutPort,bOnOff);
 }
-BOOL InitCommunication(struct _PubDev *pPubDev)
+BOOL InitCommunication(struct DEV_CLASS *pPubDev)
 {
 	pPubDev->SetFrameModule(pPubDev,FRAMEMODULE_MODBUS);//使用MODBUS规约模块
 	pPubDev->RegisterPrePolling(pPubDev,PrePolling);

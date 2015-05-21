@@ -1,7 +1,8 @@
-#pragma once
-
 #include "../../../txj/libio.h"
 #include "../../../txj/appmc.h"
+
+#ifndef H_DEV_TYPES
+#define H_DEV_TYPES
 
 #ifndef DEBUG_PRINT
 #define DEBUG_PRINT(_pPubDev,_format,...)\
@@ -53,21 +54,31 @@ typedef struct SOE_UNIT_TAG
 	float m_fValue;//动作值，暂无用
 }SOE_UNIT;
 //////////////////////////////////////////////////////////////////////////
-struct _PubDev ;
+struct DEV_CLASS ;
 struct INTERVALSEND_NODE_TAG;
-typedef BOOL (*PREPOLLING_CALLBACK)(struct _PubDev *pPubDev);
-typedef void (*DESTROY_CALLBACK)(struct _PubDev *pPubDev);
-typedef void (*RECONNECT_CALLBACK)(struct _PubDev *pPubDev);
-typedef BOOL (*INTERVALSEND_CALLBACK)(struct _PubDev *pPubDev,struct INTERVALSEND_NODE_TAG *pSendNode);
-typedef BOOL (*RECEIVE_CALLBACK)(struct _PubDev *pPubDev,BYTE *pData,int nSize);
-typedef BOOL (*YKOPERATION_CALLBACK)(struct _PubDev *pPubDev,WORD wOutPort,BOOL bOnOff);//bOnOff TRUE为分闸，FALSE为合闸
-typedef BOOL (*SETDEVICETIME_CALLBACK)(struct _PubDev* pPubDev);
-typedef BOOL (*RESETDEVICE_CALLBACK)(struct _PubDev * pPubDev);
-typedef BOOL (*READFIXEDVALUE_CALLBACK)(struct _PubDev * pPubDev,WORD wStartIdx,WORD wNum);
-typedef BOOL (*WRITEFIXEDVALUE_CALLBACK)(struct _PubDev * pPubDev,WORD wStartIdx,WORD wNum,WORD awFixValue[]);
+typedef BOOL (*PREPOLLING_CALLBACK)(struct DEV_CLASS *pPubDev);
+typedef void (*DESTROY_CALLBACK)(struct DEV_CLASS *pPubDev);
+typedef void (*RECONNECT_CALLBACK)(struct DEV_CLASS *pPubDev);
+typedef BOOL (*INTERVALSEND_CALLBACK)(struct DEV_CLASS *pPubDev,struct INTERVALSEND_NODE_TAG *pSendNode);
+typedef BOOL (*RECEIVE_CALLBACK)(struct DEV_CLASS *pPubDev,BYTE *pData,int nSize);
+typedef char LUA_RECV_CALLBACK[64];
+typedef char LUA_SEND_CALLBACK[64];
+typedef BOOL (*YKOPERATION_CALLBACK)(struct DEV_CLASS *pPubDev,WORD wOutPort,BOOL bOnOff);//bOnOff TRUE为分闸，FALSE为合闸
+typedef BOOL (*SETDEVICETIME_CALLBACK)(struct DEV_CLASS* pPubDev);
+typedef BOOL (*RESETDEVICE_CALLBACK)(struct DEV_CLASS * pPubDev);
+typedef BOOL (*READFIXEDVALUE_CALLBACK)(struct DEV_CLASS * pPubDev,WORD wStartIdx,WORD wNum);
+typedef BOOL (*WRITEFIXEDVALUE_CALLBACK)(struct DEV_CLASS * pPubDev,WORD wStartIdx,WORD wNum,WORD awFixValue[]);
 
 #define YKSELECT_CALLBACK YKOPERATION_CALLBACK 
 #define YKEXECUTE_CALLBACK YKOPERATION_CALLBACK 
 #define YKCANCEL_CALLBACK YKOPERATION_CALLBACK 
 #define WRITEFIXEDVALUE_SELECT_CALLBACK WRITEFIXEDVALUE_CALLBACK 
 #define WRITEFIXEDVALUE_EXECUTE_CALLBACK WRITEFIXEDVALUE_CALLBACK 
+
+#define LUA_CALLBACK_VALID(_callback)  (*(_callback)?TRUE:FALSE)
+#define MAKE_NULL_LUA_CALLBACK(_callback) *(_callback)=0
+#define COPY_LUA_CALLBACK(_dst_callback,_src_callback) \
+	if ((_src_callback) && (_dst_callback)) strcpy((_src_callback),(_dst_callback)); \
+	else if (_dst_callback) {*(_dst_callback)=0;}
+
+#endif

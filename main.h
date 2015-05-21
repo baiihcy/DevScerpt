@@ -1,11 +1,11 @@
 #include "types.h"
 #pragma once
 
-struct _PubDev;
-#define GetPPubDevFromPDeviceUnit(_pDeviceUnit) (struct _PubDev*)_pDeviceUnit->pExDeviceUnit
+struct DEV_CLASS;
+#define GetPPubDevFromPDeviceUnit(_pDeviceUnit) (struct DEV_CLASS*)_pDeviceUnit->pExDeviceUnit
 extern IoGlobal * pGlobal;
 extern SCADAUnit*   pScadaUnit;
-extern BOOL InitCommunication(struct _PubDev *);
+extern BOOL InitCommunication(struct DEV_CLASS *);
 
 
 

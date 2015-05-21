@@ -120,6 +120,20 @@ SOURCE=.\scriptif.c
 # PROP BASE Exclude_From_Build 1
 # PROP Exclude_From_Build 1
 # End Source File
+# Begin Source File
+
+SOURCE=.\sendlist.c
+# PROP Exclude_From_Scan -1
+# PROP BASE Exclude_From_Build 1
+# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=.\trlist.c
+# PROP Exclude_From_Scan -1
+# PROP BASE Exclude_From_Build 1
+# PROP Exclude_From_Build 1
+# End Source File
 # End Group
 # Begin Group "Header Files"
 
@@ -152,6 +166,20 @@ SOURCE=.\main.h
 # Begin Source File
 
 SOURCE=.\scriptif.h
+# PROP Exclude_From_Scan -1
+# PROP BASE Exclude_From_Build 1
+# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=.\sendlist.h
+# PROP Exclude_From_Scan -1
+# PROP BASE Exclude_From_Build 1
+# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=.\trlist.h
 # PROP Exclude_From_Scan -1
 # PROP BASE Exclude_From_Build 1
 # PROP Exclude_From_Build 1
