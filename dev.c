@@ -258,7 +258,7 @@ static BOOL InsertSendFrame(struct DEV_CLASS *pPubDev,BYTE *pSend,WORD cbSendSiz
 	}
 }
 
-static inline BYTE* MakeFrame(struct DEV_CLASS *pPubDev,BYTE byFrameType,BYTE byCmd, BYTE *pData, WORD wDataLen, WORD *pwSize)
+static inline BYTE* MakeFrame(struct DEV_CLASS *pPubDev,BYTE byCmd, BYTE *pData,BYTE byFrameType, WORD wDataLen, WORD *pwSize)
 {
 	struct _DeviceUnit *pDeviceUnit=pPubDev->pDeviceUnit;
 	CFrameUnit *pSFrameUnit=pDeviceUnit->pSFrameUnit;
@@ -772,7 +772,7 @@ static BOOL RunPolling(struct _DeviceUnit * pDeviceUnit)
 			if (HandleOnSend(g_pLua,pPubDev,pIntervalSend->m_pfnSendCallback)>0)
 				goto __Polling_End;
 		}
-		else {
+		else if (pIntervalSend->m_pSendframeInfo) {
 			pSendframeInfo=pIntervalSend->m_pSendframeInfo;
 			if (pPubDev->SendFrame(pPubDev,
 				pSendframeInfo->m_pSend,

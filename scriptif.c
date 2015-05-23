@@ -5,10 +5,8 @@ int luafunc_LoadFrame(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
 	luaL_checkstring(pLua,2);
-	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
-		lua_pop(pLua,1); //pop STR_DEV_UDATA
-		return -1;
-	}
+	if (!lua_istable(pLua,1)) return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
 	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	if (pPubDev) {
@@ -25,35 +23,52 @@ int luafunc_LoadFrame(lua_State *pLua)
 int luafunc_PollSend(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
-	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
-		lua_pop(pLua,1); //pop STR_DEV_UDATA
-		return -1;
-	}
+	luaL_checktype(pLua,3,LUA_TTABLE);
+	if (!lua_istable(pLua,1)) return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
 	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
+	if (pPubDev) {
+		DWORD dwInterval=lua_tointeger(pLua,2);
+		const char *pRecvProc=lua_tostring(pLua,4);
+		BOOL bUseFrame=lua_toboolean(pLua,5);
+		BYTE pBuffer[256];
+		WORD wBufferSize=256;
+		wBufferSize=BufferToBytes(pLua,3,pBuffer,wBufferSize);
+		if (wBufferSize>0) {
+			if (pPubDev->RegisterIntervalSend(pPubDev,dwInterval,pBuffer,wBufferSize,pRecvProc,bUseFrame)) {
+				lua_pushboolean(pLua,TRUE);
+				return 1;
+			}
+		}
+	}
 	return 0;
 }
 /*参数:interval_sec,send_proc*/
-int luafunc_PollSendPeoc(lua_State *pLua)
+int luafunc_PollSendProc(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
-	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
-		lua_pop(pLua,1); //pop STR_DEV_UDATA
-		return -1;
-	}
+	luaL_checkstring(pLua,3);
+	if (!lua_istable(pLua,1)) return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
 	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
-	printf("\n luafunc_PollSendPeoc");
+	if (pPubDev) {
+		DWORD dwInterval=lua_tointeger(pLua,2);
+		const char *pSendProc=lua_tostring(pLua,3);
+		if (pPubDev->RegisterIntervalSend_Callback(pPubDev,dwInterval,pSendProc)) {
+			lua_pushboolean(pLua,TRUE);
+			return 1;
+		}
+	}
 	return 0;
 }
 /*返回值:device_no*/
 int luafunc_GetDeviceNo(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
-	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
-		lua_pop(pLua,1); //pop STR_DEV_UDATA
-		return -1;
-	}
+	if (!lua_istable(pLua,1)) return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
 	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	if (pPubDev) {
@@ -66,10 +81,8 @@ int luafunc_GetDeviceNo(lua_State *pLua)
 int luafunc_GetChannelNo(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
-	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
-		lua_pop(pLua,1); //pop STR_DEV_UDATA
-		return -1;
-	}
+	if (!lua_istable(pLua,1)) return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
 	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	if (pPubDev) {
@@ -82,10 +95,8 @@ int luafunc_GetChannelNo(lua_State *pLua)
 int luafunc_GetLinkAddr(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
-	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
-		lua_pop(pLua,1); //pop STR_DEV_UDATA
-		return -1;
-	}
+	if (!lua_istable(pLua,1)) return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
 	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	if (pPubDev) {
@@ -98,10 +109,8 @@ int luafunc_GetLinkAddr(lua_State *pLua)
 int luafunc_GetLinkAddr2(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
-	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
-		lua_pop(pLua,1); //pop STR_DEV_UDATA
-		return -1;
-	}
+	if (!lua_istable(pLua,1)) return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
 	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	if (pPubDev) {
@@ -114,10 +123,8 @@ int luafunc_GetLinkAddr2(lua_State *pLua)
 int luafunc_GetParam1(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
-	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
-		lua_pop(pLua,1); //pop STR_DEV_UDATA
-		return -1;
-	}
+	if (!lua_istable(pLua,1)) return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
 	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	if (pPubDev) {
@@ -130,10 +137,8 @@ int luafunc_GetParam1(lua_State *pLua)
 int luafunc_GetParam2(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
-	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
-		lua_pop(pLua,1); //pop STR_DEV_UDATA
-		return -1;
-	}
+	if (!lua_istable(pLua,1)) return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
 	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	if (pPubDev) {
@@ -147,10 +152,8 @@ int luafunc_SetLinkAddr(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
 	luaL_checkinteger(pLua,2);
-	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
-		lua_pop(pLua,1); //pop STR_DEV_UDATA
-		return -1;
-	}
+	if (!lua_istable(pLua,1)) return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
 	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	if (pPubDev) {
@@ -167,10 +170,8 @@ int luafunc_GetYXOne(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
 	luaL_checkinteger(pLua,2);
-	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
-		lua_pop(pLua,1); //pop STR_DEV_UDATA
-		return -1;
-	}
+	if (!lua_istable(pLua,1)) return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
 	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	if (pPubDev) {
@@ -190,10 +191,8 @@ int luafunc_GetYCOne(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
 	luaL_checkinteger(pLua,2);
-	if (!lua_istable(pLua,1) || LUA_TLIGHTUSERDATA!=lua_getfield(pLua,1,STR_DEV_UDATA)) {
-		lua_pop(pLua,1); //pop STR_DEV_UDATA
-		return -1;
-	}
+	if (!lua_istable(pLua,1)) return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
 	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	if (pPubDev) {
@@ -219,7 +218,6 @@ int luafunc_MailYXOne(lua_State *pLua)
 		if (pPubDev) {
 			int nYxIndex=lua_tointeger(pLua,2);
 			int nYxValue=lua_tointeger(pLua,3);
-			printf("\n MailYXOne %d %d",nYxIndex,nYxValue);
 			if (nYxIndex>0) {
 				pPubDev->ExplainYx(pPubDev,nYxIndex+1,nYxValue);
 			}
@@ -260,6 +258,7 @@ int luafunc_MailYCOne(lua_State *pLua)
 			float fValue=lua_tonumber(pLua,3);
 			//printf("\n %d %f",nYcIndex,fValue);
 			if (nYcIndex>0) {
+				printf("\n MailYC %d,%f",nYcIndex,fValue);
 				pPubDev->ExplainYc(pPubDev,nYcIndex-1,fValue);	
 			}
 		}
@@ -325,11 +324,36 @@ int luafunc_MailYKResult(lua_State *pLua)
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	return 0;
 }
-/*参数:cmd,buffer,frame_type*/
+/*参数:cmd,buffer,frame_type;返回值:frame_buffer*/
 int luafunc_MakeFrame(lua_State *pLua)
 {
-	struct DEVICE_CALSS *pDevClass=lua_touserdata(pLua,1/*,STR_SCRIPTE_BASECLASS*/);
-	printf("\n luafunc_MakeFrame");
+	luaL_checktype(pLua,1,LUA_TTABLE);
+	luaL_checkinteger(pLua,2);
+	luaL_checktype(pLua,3,LUA_TTABLE);
+	if (!lua_istable(pLua,1))
+		return 0;
+	lua_getfield(pLua,1,STR_DEV_UDATA);
+	CPubDev *pPubDev=(CPubDev*)lua_touserdata(pLua,-1);
+	lua_pop(pLua,1);
+	if (pPubDev) {
+		BYTE byCmd=(BYTE)lua_tointeger(pLua,2);
+		BYTE byFrameType=(BYTE)lua_tointeger(pLua,4);
+		if (lua_istable(pLua,3)) {
+			char pBuffer[256];
+			int nSize=sizeof(pBuffer);
+			nSize=BufferToBytes(pLua,3,pBuffer,nSize);
+			if (nSize>0) {
+				BYTE *pFrameBuffer=NULL;
+				WORD wFrameSize=0;
+				pFrameBuffer=pPubDev->MakeFrame(pPubDev,byCmd,pBuffer,byFrameType,nSize,&wFrameSize);
+				if (pFrameBuffer && wFrameSize>0 && 
+					BytesToBuffer(pLua,pFrameBuffer,wFrameSize)>0) {
+					return 1;
+				}
+			}
+		}
+	}
+	
 	return 0;
 }
 /*参数:buffer,recv_proc,use_frame*/
@@ -345,13 +369,10 @@ int luafunc_Send(lua_State *pLua)
 				int nSize=sizeof(pBuffer);
 				nSize=BufferToBytes(pLua,2,pBuffer,nSize);
 				if (nSize>0) {
-					pPubDev->SendFrame(pPubDev,pBuffer,nSize,NULL,FALSE);
-					
 					const char *pRecvProcName=lua_tostring(pLua,3);
-					if (pRecvProcName) {
-						COPY_LUA_CALLBACK(pPubDev->szRecvProc,pRecvProcName);
-						pPubDev->bUseRecvProc=TRUE;
-					}
+					BOOL bUseFrame=lua_toboolean(pLua,4);
+
+					pPubDev->SendFrame(pPubDev,pBuffer,nSize,pRecvProcName,bUseFrame);
 				}
 			}
 		}
@@ -392,7 +413,7 @@ int luafunc_DebugPrint(lua_State *pLua)
 static struct luaL_Reg funcsScriptBaseClass[] = {
 	{"LoadFrame", luafunc_LoadFrame},
 	{"PollSend", luafunc_PollSend},
-	{"PollSendPeoc", luafunc_PollSendPeoc},
+	{"PollSendProc", luafunc_PollSendProc},
 	{"GetDeviceNo", luafunc_GetDeviceNo},
 	{"GetChannelNo", luafunc_GetChannelNo},
 	{"GetLinkAddr", luafunc_GetLinkAddr},
@@ -454,7 +475,7 @@ int HandleOnInit(lua_State *pLua, struct DEV_CLASS *pPubDev)
 说明:触发OnSend接口
 返回值:找不到OnSend接口直接返回FALSE，否则返回OnSend接口的返回值
 */
-int HandleOnSend( lua_State *pLua, struct DEV_CLASS *pPubDev, LUA_SEND_CALLBACK pSendCallback )
+int HandleOnSend( lua_State *pLua, struct DEV_CLASS *pPubDev, const LUA_SEND_CALLBACK pSendCallback )
 {
 	if (!pLua || !pPubDev) return -1;
 	BOOL bRet=TRUE;
@@ -474,7 +495,7 @@ int HandleOnSend( lua_State *pLua, struct DEV_CLASS *pPubDev, LUA_SEND_CALLBACK 
 说明:触发OnRecv接口
 返回值:找不到OnRecv接口直接返回TRUE，否则返回OnRecv接口的返回值
 */
-int HandleOnRecv( lua_State *pLua,struct DEV_CLASS *pPubDev,LUA_RECV_CALLBACK pRecvCallback, BYTE *pBuffer, int nSize )
+int HandleOnRecv( lua_State *pLua,struct DEV_CLASS *pPubDev, const LUA_RECV_CALLBACK pRecvCallback, BYTE *pBuffer, int nSize )
 {
 	if (!pLua || !pPubDev ||  !pBuffer || nSize<=0) 
 		return -1;
@@ -484,21 +505,10 @@ int HandleOnRecv( lua_State *pLua,struct DEV_CLASS *pPubDev,LUA_RECV_CALLBACK pR
 	else 
 		strcpy(pInterface,"OnRecv");
 	BOOL bRet=TRUE;
-	BOOL bDone=FALSE;
 	if (BytesToBuffer(pLua,pBuffer,nSize)>=0) {
-		if (!bDone && pPubDev->bUseRecvProc) {
-			pPubDev->bUseRecvProc=FALSE;
-			if (CallInterface(pLua,pPubDev,pPubDev->szRecvProc,1,1)) {
-				bRet=lua_toboolean(pLua,-1);
-				lua_pop(pLua, 1); //pop lua_pcall return value
-				bDone=TRUE;
-			}
-		}
-
-		if (!bDone && CallInterface(pLua,pPubDev,pInterface,1,1)>0) {
+		if (CallInterface(pLua,pPubDev,pInterface,1,1)>0) {
 			bRet=lua_toboolean(pLua,-1);
 			lua_pop(pLua, 1); //pop lua_pcall return value
-			bDone=TRUE;
 		}
 
 		lua_pop(pLua,1); //pop buffer

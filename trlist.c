@@ -13,10 +13,11 @@ void MakeCircular(struct TR_LIST *pList)
 {
 	if (!pList) return;
 	pList->m_bCircular=TRUE;
+	//printf("\n MakeCircular:Head=%x,Tail=%x",pList->m_pListHead,pList->m_pListTail);
 	if (pList->m_pListHead) 
 		pList->m_pListHead->pPrev=pList->m_pListTail;
 	if (pList->m_pListTail)
-		pList->m_pListTail->pPrev=pList->m_pListHead;
+		pList->m_pListTail->pNext=pList->m_pListHead;
 }
 
 BOOL IsEmpty(struct TR_LIST *pList)
@@ -27,14 +28,14 @@ BOOL IsEmpty(struct TR_LIST *pList)
 }
 int GetCount(struct TR_LIST *pList)
 {
-	if (!pList) return -1;
+	if (!pList || !pList->m_pListHead) return 0;
 	int nCount=0;
 	TR_LIST_NODE *pNd=pList->m_pListHead;
 	TR_LIST_NODE *pStart=pNd;
-	while (pNd && pNd->pNext!=pStart) {
+	do {
 		nCount++;
 		pNd=pNd->pNext;
-	}
+	}while (pNd && pNd->pNext!=pStart);
 	return nCount;
 }
 TR_LIST_NODE* SetHead(struct TR_LIST *pList,TR_LIST_NODE *pHead)
@@ -63,29 +64,29 @@ TR_LIST_NODE* SetTail(struct TR_LIST *pList,TR_LIST_NODE *pTail)
 }
 TR_LIST_NODE* FindNode(struct TR_LIST *pList,void *pData)
 {
-	if (!pList) return NULL;
+	if (!pList || !pList->m_pListHead) return NULL;
 	TR_LIST_NODE *pNd=pList->m_pListHead;
 	TR_LIST_NODE *pStart=pNd;
-	while (pNd && pNd->pNext!=pStart) {
+	do {
 		if (pNd->pData==pData) {
 			return pNd;
 		}
 		pNd=pNd->pNext;
-	}
+	}while (pNd && pNd->pNext!=pStart);
 	return NULL;
 }
 TR_LIST_NODE* NodeInList(struct TR_LIST *pList,TR_LIST_NODE *pNode)
 {
-	if (!pList || !pNode)
+	if (!pList || !pList->m_pListHead || !pNode)
 		return NULL;
 	TR_LIST_NODE *pNd=pList->m_pListHead;
 	TR_LIST_NODE *pStart=pNd;
-	while (pNd && pNd->pNext!=pStart) {
+	do {
 		if (pNd==pNode) {
 			return pNode;
 		}
 		pNd=pNd->pNext;
-	}
+	}while (pNd && pNd->pNext!=pStart);
 	return NULL;
 }
 void RemoveNode(struct TR_LIST *pList,TR_LIST_NODE *pNode)
@@ -108,7 +109,7 @@ TR_LIST_NODE* InsertNode(struct TR_LIST *pList,TR_LIST_NODE *pPrev,TR_LIST_NODE 
 	if (!pList || !pNode)
 		return NULL;
 	if (!pList->m_pListHead) {
-		pList->m_pListHead=pList->m_pListTail=pNode;
+		pList->SetHead(pList,pNode);
 		return pNode;
 	}
 	TR_LIST_NODE *pNext=NULL;
@@ -122,10 +123,10 @@ TR_LIST_NODE* InsertNode(struct TR_LIST *pList,TR_LIST_NODE *pPrev,TR_LIST_NODE 
 		if (pPrev) pPrev->pNext=pNode;
 		if (pNext) pNext->pPrev=pNode;
 	}
-	if (pNext==pList->m_pListHead)
-		pList->SetHead(pList,pNode);
 	if (pPrev==pList->m_pListTail)
 		pList->SetTail(pList,pNode);
+	else if (pNext==pList->m_pListHead)
+		pList->SetHead(pList,pNode);
 	return pNode;
 }
 TR_LIST_NODE* MoveNode(struct TR_LIST *pList,TR_LIST_NODE *pPrev,TR_LIST_NODE *pNode)
@@ -151,13 +152,19 @@ void DeleteNode(struct TR_LIST *pList,TR_LIST_NODE *pNode)
 }
 TR_LIST_NODE* InsertData(struct TR_LIST *pList,TR_LIST_NODE *pPrev,void *pData)
 {
-	if (!pList || !pPrev || pData)
+	if (!pList || !pData)
 		return NULL;
 	TR_LIST_NODE *pNode=malloc(sizeof(TR_LIST_NODE));
 	if (pNode) {
 		memset(pNode,0,sizeof(TR_LIST_NODE));
 		pNode->pData=pData;
-		pList->InsertNode(pList,pPrev,pNode);
+		if (!pList->InsertNode(pList,pPrev,pNode)) {
+			free(pNode);
+			printf("\n InsertData error : Failed to InsertNode");
+			return NULL;
+		}
+	} else {
+		printf("\n InsertData error : Failed to malloc(TR_LIST_NODE)");
 	}
 	return pNode;
 }

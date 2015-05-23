@@ -59,7 +59,7 @@ typedef struct DEV_CLASS
 	BOOL (*PollSendFrame)(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,LUA_RECV_CALLBACK pfnRecvCallBack,BOOL bRecvUseFrame);
 	BOOL (*InsertSendFrame)(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,LUA_RECV_CALLBACK pfnRecvCallBack,BOOL bRecvUseFrame);
 	void (*ClearInsertSendFrame)(struct DEV_CLASS *pPubDev);
-	BYTE* (*MakeFrame)(struct DEV_CLASS *pPubDev,BYTE byFrameType,BYTE byCmd, BYTE *pData, WORD wDataLen, WORD *pwSize);
+	BYTE* (*MakeFrame)(struct DEV_CLASS *pPubDev,BYTE byCmd, BYTE *pData,BYTE byFrameType, WORD wDataLen, WORD *pwSize);
 	BOOL (*SendFrame)(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,LUA_RECV_CALLBACK pfnRecvCallBack,BOOL bRecvUseFrame);
 	BYTE (*Get_RecvCID)(struct DEV_CLASS *pPubDev);
 	BYTE (*Get_RecvADDR)(struct DEV_CLASS *pPubDev);

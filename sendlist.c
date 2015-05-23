@@ -3,18 +3,22 @@
 //////////////////////////////////////////////////////////////////////////
 SENDFRAME_INFO* NewSendframeInfo(BYTE *pSend,WORD cbSendSize,LUA_RECV_CALLBACK pfnRecvCallback,BOOL bRecvUseFrame)
 {
+	if (!pSend) return NULL;
 	SENDFRAME_INFO *pInfo=malloc(sizeof(SENDFRAME_INFO));
-	memset(pInfo,0,sizeof(SENDFRAME_INFO));
 	if (NULL==pInfo) {
 		printf("\n NewSendframeInfo error : Failed to malloc(SENDFRAME_INFO)");
 		return NULL;
 	}
+	memset(pInfo,0,sizeof(SENDFRAME_INFO));
+
 	pInfo->m_pSend=malloc(cbSendSize);
 	if (NULL==pInfo->m_pSend) {
 		free(pInfo);
 		printf("\n NewSendframeInfo error : Failed to malloc(SENDFRAME_INFO.m_pSend)");
 		return NULL;
 	}
+	pInfo->m_cbSendSize=cbSendSize;
+	memcpy(pInfo->m_pSend,pSend,cbSendSize);
 	COPY_LUA_CALLBACK(pInfo->m_pfnRecvCallBack,pfnRecvCallback);
 	pInfo->m_bRecvUseFrame=bRecvUseFrame;
 	return pInfo;
@@ -147,12 +151,16 @@ INTERVALSEND_INFO* Add(struct INTERVALSEND_LIST* pList,DWORD dwIntervalSec,BYTE 
 	DWORD dwID=pList->m_dwAddedCount+1;
 	TR_LIST *pTRList=&pList->m_TRList;
 	INTERVALSEND_INFO *pInfo=NewIntervalsendInfo(dwIntervalSec,pSend,cbSendSize,pfnRecvCallback,bRecvUseFrame);
-	if (NULL==pInfo) 
+	if (NULL==pInfo) {
+		printf("\n INTERVALSEND_LIST.Add Error ID(%lu) : Failed to NewIntervalsendInfo",dwID);
 		goto __err;
+	}
 	
 	TR_LIST_NODE *pNode=pNode=pTRList->InsertData(pTRList,pTRList->m_pListTail,pInfo);
-	if (NULL==pNode)
+	if (NULL==pNode) {
+		printf("\n INTERVALSEND_LIST.Add Error ID(%lu) : Failed to InsertData",dwID);
 		goto __err;
+	}
 	
 	if (!pList->m_pNowNode)
 		pList->m_pNowNode=pNode;
@@ -166,7 +174,6 @@ __err:
 		pTRList->DeleteNode(pTRList,pNode);
 	}
 	FreeIntervalInfo(pInfo);
-	printf("\n INTERVALSEND_LIST.Add Error ID(%lu)",dwID);
 	return NULL;
 }
 INTERVALSEND_INFO* Add_Callback(struct INTERVALSEND_LIST* pList,DWORD dwIntervalSec,LUA_SEND_CALLBACK pfnSendCallback)
@@ -199,22 +206,27 @@ __err:
 }
 INTERVALSEND_INFO* GetTimeout(struct INTERVALSEND_LIST* pList)
 {
-	if (!pList) return NULL;
-	//TR_LIST *pTRList=&pList->m_TRList;
+	if (!pList || !pList->m_pNowNode) return NULL;
+	TR_LIST *pTRList=&pList->m_TRList;
 	time_t tNow=time(NULL);
 	TR_LIST_NODE *pNode=pList->m_pNowNode,*pStart=pNode;
-	INTERVALSEND_INFO *pInfo=NULL;
-	while (pNode && pNode->pNext!=pStart) {
+	INTERVALSEND_INFO *pInfo=NULL,*pRet=NULL;
+	do {
 		pInfo=(INTERVALSEND_INFO*)pNode->pData;
 		if (pInfo) {
-			if (tNow-pInfo->m_tSendTime>pInfo->m_dwIntervalSec)
-				return pInfo;
+			if (tNow-pInfo->m_tSendTime>pInfo->m_dwIntervalSec) {
+				pRet=pInfo;
+				break;
+			}
 		}
 		pNode=pNode->pNext;
-	}
-	if (pList->m_pNowNode)
-		pList->m_pNowNode=pList->m_pNowNode->pNext;
-	return NULL;
+	}while (pNode && pNode->pNext!=pStart);
+
+	if (pNode && pNode->pNext)
+		pList->m_pNowNode=pNode->pNext;
+	else
+		pList->m_pNowNode=pTRList->m_pListHead;
+	return pRet;
 }
 void IntervalSendList_Clear(struct INTERVALSEND_LIST* pList)
 {

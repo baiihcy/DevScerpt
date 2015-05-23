@@ -75,10 +75,10 @@ typedef BOOL (*WRITEFIXEDVALUE_CALLBACK)(struct DEV_CLASS * pPubDev,WORD wStartI
 #define WRITEFIXEDVALUE_SELECT_CALLBACK WRITEFIXEDVALUE_CALLBACK 
 #define WRITEFIXEDVALUE_EXECUTE_CALLBACK WRITEFIXEDVALUE_CALLBACK 
 
-#define LUA_CALLBACK_VALID(_callback)  (*(_callback)?TRUE:FALSE)
+#define LUA_CALLBACK_VALID(_callback)  ((_callback)?(*(_callback)?TRUE:FALSE):FALSE)
 #define MAKE_NULL_LUA_CALLBACK(_callback) *(_callback)=0
 #define COPY_LUA_CALLBACK(_dst_callback,_src_callback) \
-	if ((_src_callback) && (_dst_callback)) strcpy((_src_callback),(_dst_callback)); \
+	if ((_src_callback) && (_dst_callback)) strcpy((_dst_callback),(_src_callback)); \
 	else if (_dst_callback) {*(_dst_callback)=0;}
 
 #endif

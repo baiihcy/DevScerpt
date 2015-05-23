@@ -49,7 +49,7 @@ int BufferToBytes(lua_State *pLua,int index,BYTE *pBuffer,int nSize)
 
 	lua_getfield(pLua,index,"arr");
 	if (!lua_istable(pLua,-1)) {
-		lua_pop(pLua,1);
+		lua_pop(pLua,1); //pop arr
 		return 0;
 	}
 
@@ -65,12 +65,14 @@ int BufferToBytes(lua_State *pLua,int index,BYTE *pBuffer,int nSize)
 		lua_pushnil(pLua);
 	else
 		lua_pushinteger(pLua,offset);
+
 	do {
 		lua_next(pLua,-2); //next arr
 		pBuffer[i++]=lua_tointeger(pLua,-1)&0xff;
 		lua_pop(pLua,1); //pop value
 	}while ( i<nBytes && i<nSize);
-	lua_pop(pLua,1); //pop key
+
+	lua_pop(pLua,2); //pop key,arr
 	return i;
 }
 
@@ -82,7 +84,7 @@ int BytesToBuffer(lua_State *pLua,BYTE *pBuffer,int nSize)
 {
 	if (!pLua)
 		return -1;
-	if (!pBuffer || !nSize) 
+	if (!pBuffer || nSize<=0) 
 		return 0;
 	int iRet=1;
 	lua_createtable(pLua,0,0); //push new table(buffer)
@@ -93,10 +95,10 @@ int BytesToBuffer(lua_State *pLua,BYTE *pBuffer,int nSize)
 		int i;
 		for (i=0;i<nSize;i++) {
 			//printf("\n arr[%d]=%02x",i+1,pBuffer[i]);
-			lua_pushinteger(pLua,i+1); //push key
+			//lua_pushinteger(pLua,i+1); //push key
 			lua_pushinteger(pLua,pBuffer[i]); //push value
-			lua_settable(pLua,-3);
-			//lua_rawseti(pLua,-3,i+1);
+			//lua_settable(pLua,-3);
+			lua_rawseti(pLua,-2,i+1);
 		}
 		lua_setfield(pLua,-2,"arr"); //pop table(arr)
 		
@@ -105,7 +107,11 @@ int BytesToBuffer(lua_State *pLua,BYTE *pBuffer,int nSize)
 		
 		lua_pushinteger(pLua,0); //push offset
 		lua_setfield(pLua,-2,"offset"); //pop offset
-		
+
+		/*DEBUG
+		lua_getfield(pLua,-1,"PrintBuffer");
+		lua_pushvalue(pLua,-2);
+		lua_pcall(pLua,1,0,0);*/
 	}
 	else {
 		iRet=-1;
@@ -222,8 +228,10 @@ int LoadDevScript(lua_State *pLua, struct DEV_CLASS *pPubDev, char *szScriptName
 	if (NULL==pScriptClassInfo) /*Î´Ôø¼ÓÔØ*/ {
 		char szFileName[255];
 		sprintf(szFileName,"devices/%s",szScriptName);
-		if (luaL_dofile(pLua,szFileName)!=LUA_OK)
+		if (luaL_dofile(pLua,szFileName)!=LUA_OK) {
+			printf("\n LoadDevScript error : \n%s\n",lua_tostring(pLua,-1));
 			return -1;
+		}
 		if (lua_getglobal(pLua,STR_DEV_SCRIPT)==LUA_TNIL) {
 			lua_pop(pLua,1);
 			return 0;
@@ -264,7 +272,7 @@ int LoadDevScript(lua_State *pLua, struct DEV_CLASS *pPubDev, char *szScriptName
 */
 int CallInterface(lua_State *pLua, struct DEV_CLASS *pPubDev, const char *szInterfce, int nArg, int nResult)
 {
-	if (!pLua || !pPubDev || !szInterfce || nArg<0) return -1;
+	if (!pLua || !pPubDev || !szInterfce || nArg<0 || nResult<0) return -1;
 	int DevInstanceKey = pPubDev->Get_DeviceNo(pPubDev);
 	int iRet=0;
 	lua_getfield(pLua, LUA_REGISTRYINDEX, STR_DEVS_INSTANCE); //push STR_DEVS_INSTANCE
@@ -279,8 +287,10 @@ int CallInterface(lua_State *pLua, struct DEV_CLASS *pPubDev, const char *szInte
 				for (iArg=0;iArg<nArg;iArg++)
 					lua_pushvalue(pLua,-(4+nArg));
 			}
-			printf("\nCall Interface[%s]\n",szInterfce);
-			lua_call(pLua, 1+nArg, nResult);
+			if (lua_pcall(pLua, 1+nArg, nResult, 0)!=LUA_OK) {
+				printf("\n Call Interface[%s] error : \n%s\n",szInterfce,lua_tostring(pLua,-1));
+				iRet=-1;
+			}
 			iRet=1;
 		}
 		else lua_pop(pLua, 1); //pop szInterfce
