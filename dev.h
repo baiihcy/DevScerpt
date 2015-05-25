@@ -8,6 +8,7 @@
 #include "DataProcess.h"
 
 #define BUFFER_SIZE 1024
+#define MAX_CHANNEL 32
 
 enum
 {
@@ -33,8 +34,6 @@ typedef struct DEV_CLASS
 	//////////////////////////////////////////////////////////////////////////
 	//LUA SCRIPT
 	void *pScriptClassInfo;
-	BOOL bUseRecvProc;
-	char szRecvProc[128];
 	//////////////////////////////////////////////////////////////////////////
 	/*注册操作*/
 	void (*RegisterYkSelect)(struct DEV_CLASS *pPubDev,YKSELECT_CALLBACK pfnYkSelect);
@@ -56,18 +55,18 @@ typedef struct DEV_CLASS
 	//SENDFRAME_LIST_NODE* (*RegisterPollSendFrame)(struct DEV_CLASS *pPubDev,BYTE *pSend,WORD wSize,RECEIVE_CALLBACK pfnRecvCallBack);
 	//SENDFRAME_LIST_NODE* (*RegisterPollSendFrame_ModbusAsk)(struct _PubDev *pPubDev,BYTE byCmd, WORD wRegAddr,WORD wRegNum,RECEIVE_CALLBACK pfnRecvCallBack);
 	//BOOL (*DestroyPollSendFrame)(struct DEV_CLASS *pPubDev,SENDFRAME_LIST *pPollSendFrameNode);
-	BOOL (*PollSendFrame)(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,LUA_RECV_CALLBACK pfnRecvCallBack,BOOL bRecvUseFrame);
-	BOOL (*InsertSendFrame)(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,LUA_RECV_CALLBACK pfnRecvCallBack,BOOL bRecvUseFrame);
+	BOOL (*PollSendFrame)(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,const LUA_RECV_CALLBACK pfnRecvCallBack);
+	BOOL (*InsertSendFrame)(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,const LUA_RECV_CALLBACK pfnRecvCallBack);
 	void (*ClearInsertSendFrame)(struct DEV_CLASS *pPubDev);
 	BYTE* (*MakeFrame)(struct DEV_CLASS *pPubDev,BYTE byCmd, BYTE *pData,BYTE byFrameType, WORD wDataLen, WORD *pwSize);
-	BOOL (*SendFrame)(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,LUA_RECV_CALLBACK pfnRecvCallBack,BOOL bRecvUseFrame);
+	BOOL (*SendFrame)(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,const LUA_RECV_CALLBACK pfnRecvCallBack);
 	BYTE (*Get_RecvCID)(struct DEV_CLASS *pPubDev);
 	BYTE (*Get_RecvADDR)(struct DEV_CLASS *pPubDev);
 	BYTE (*Get_RecvFrameType)(struct DEV_CLASS *pPubDev);
 	//////////////////////////////////////////////////////////////////////////
 	/*间隔发送*/
-	INTERVALSEND_INFO* (*RegisterIntervalSend)(struct DEV_CLASS *pPubDev,DWORD dwIntervalSec,BYTE *pSend,WORD cbSendSize,LUA_RECV_CALLBACK pfnRecvCallback,BOOL bRecvUseFrame);
-	INTERVALSEND_INFO* (*RegisterIntervalSend_Callback)(struct DEV_CLASS *pPubDev,DWORD dwIntervalSec,LUA_SEND_CALLBACK pfnSendCallback);
+	INTERVALSEND_INFO* (*RegisterIntervalSend)(struct DEV_CLASS *pPubDev,DWORD dwIntervalSec,BYTE *pSend,WORD cbSendSize,const LUA_RECV_CALLBACK pfnRecvCallback);
+	INTERVALSEND_INFO* (*RegisterIntervalSend_Callback)(struct DEV_CLASS *pPubDev,DWORD dwIntervalSec,const LUA_SEND_CALLBACK pfnSendCallback);
 	/* 已经封装到INTERVALSEND_LIST
 	INTERVALSEND_LIST_NODE* (*RegisterIntervalSend)(struct DEV_CLASS *pPubDev,BOOL bOnceOnly,WORD wIntervalSec,INTERVALSEND_CALLBACK pfnIntervalSendCallBack);
 	BOOL (*DestroyIntervalSend)(struct DEV_CLASS *pPubDev,INTERVALSEND_LIST_NODE *pIntervalSendListNode);
@@ -122,6 +121,7 @@ typedef struct DEV_CLASS
 	//////////////////////////////////////////////////////////////////////////
 
 	/*发送接收信息 属性*/
+	BOOL m_bInitialized;
 	BOOL m_bInPollingSend;
 	BYTE m_byRecvCID;
 	BYTE m_byRecvADDR;
@@ -152,8 +152,7 @@ typedef struct DEV_CLASS
 	BYTE m_byCache_FixValue_QH;
 	//////////////////////////////////////////////////////////////////////////
 
-	DEVICE_VARIABLES Vars;
-}CPubDev;
-
+	//DEVICE_VARIABLES Vars;
+}DEV_CLASS;
 
 #endif

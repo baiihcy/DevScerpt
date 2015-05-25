@@ -2,12 +2,13 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#include "scriptif.h"
 #include "dev.h"
+#include "scriptif.h"
 
-extern lua_State *g_pLua;
 IoGlobal * pGlobal=NULL;
 SCADAUnit*   pScadaUnit=NULL;
+
+
 ////////////////////////////device des////////公共部分//////////////////////////////////////
 
 int nCookie=0;
@@ -30,9 +31,10 @@ void FreeExDevice(void* pbyDeviceUnit)
 	DeviceUnit * pDeviceUnit=(DeviceUnit*)pbyDeviceUnit;
 	if(pDeviceUnit&&pDeviceUnit->pExDeviceUnit)
 	{
-		CPubDev	* pPubDev=(CPubDev*)pDeviceUnit->pExDeviceUnit;
+		DEV_CLASS	* pPubDev=(DEV_CLASS*)pDeviceUnit->pExDeviceUnit;
 		if (pPubDev->OnDestroy)
 			pPubDev->OnDestroy(pPubDev);
+		FreeLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
 		///////////////////////////////////////////	///////////////////////////////
 		pPubDev->m_InsertSendList.Clear(&pPubDev->m_InsertSendList);
 		pPubDev->m_IntervalsendList.Clear(&pPubDev->m_IntervalsendList);
@@ -55,8 +57,12 @@ void FinishInitExDevice(void* pbyDeviceUnit)
 	DeviceUnit * pDeviceUnit=(DeviceUnit*)pbyDeviceUnit;
 	if(pDeviceUnit)
 	{
-		//CPubDev * pPubDev=(CPubDev*)pDeviceUnit->pExDeviceUnit;
-	
+		DEV_CLASS * pPubDev=(DEV_CLASS*)pDeviceUnit->pExDeviceUnit;
+		
+		if (!InitCommunication(pPubDev)) {
+			printf("\n InitCommunication error");
+		}
+		pPubDev->m_bInitComplete=TRUE;
 	}
 }
 
@@ -84,7 +90,7 @@ static void SetFrameModule(struct DEV_CLASS *pPubDev,const char szFrameModbulNam
 /*注册操作*/
 static BOOL _YkSelect(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff)
 {
-	CPubDev* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
+	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
 	if (pPubDev->YkSelect &&
 		pPubDev->YkSelect(pPubDev,wOutPort,bOnOff)) {
 		pPubDev->m_LastYkKind=k_Select;
@@ -93,7 +99,7 @@ static BOOL _YkSelect(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff
 }
 static BOOL _YkExecute(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff)
 {
-	CPubDev* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
+	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
 	if (pPubDev->YkExecute &&
 		pPubDev->YkExecute(pPubDev,wOutPort,bOnOff)) {
 		pPubDev->m_LastYkKind=k_Execute;
@@ -102,7 +108,7 @@ static BOOL _YkExecute(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOf
 }
 static BOOL _YkCancel(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff)
 {
-	CPubDev* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
+	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
 	if (pPubDev->YkCancel &&
 		pPubDev->YkCancel(pPubDev,wOutPort,bOnOff)) {
 		pPubDev->m_LastYkKind=k_Cancel;
@@ -111,21 +117,21 @@ static BOOL _YkCancel(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff
 }
 static BOOL _SetDeviceTime(struct _DeviceUnit * pDeviceUnit,BOOL bFF)
 {
-	CPubDev* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
+	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
 	if (pPubDev->SetDeviceTime)
 		return pPubDev->SetDeviceTime(pPubDev);
 	return FALSE;
 }
 static BOOL _ResetDeviceStatus(struct _DeviceUnit * pDeviceUnit)
 {
-	CPubDev* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
+	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
 	if (pPubDev->ResetDeviceStatus)
 		return pPubDev->ResetDeviceStatus(pPubDev);
 	return FALSE;
 }
 BOOL _SelectWriteFixValue(struct _DeviceUnit * pDeviceUnit,BYTE * pBuf,int bylen,BYTE byQh)
 {
-	CPubDev* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
+	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
 	WORD wStartIdx=g_DP.GetWordValue(pBuf,0,FALSE);
 	WORD wNum=g_DP.GetWordValue(pBuf,1,FALSE);
 	pPubDev->m_bCache_FixValue_Writing=FALSE;
@@ -137,7 +143,7 @@ BOOL _SelectWriteFixValue(struct _DeviceUnit * pDeviceUnit,BYTE * pBuf,int bylen
 }
 BOOL _ExecuteWriteFixValue(struct _DeviceUnit * pDeviceUnit,BYTE * pBuf,int bylen,BYTE byQh)
 {
-	CPubDev* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
+	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
 	if (bylen<4)
 	{
 		TRACE("WriteFixValue:Error:bylen=%d",bylen);
@@ -160,17 +166,17 @@ BOOL _ExecuteWriteFixValue(struct _DeviceUnit * pDeviceUnit,BYTE * pBuf,int byle
 }
 
 
-static inline void RegisterYkSelect(CPubDev *pPubDev,YKSELECT_CALLBACK pfnYkSelect)
+static inline void RegisterYkSelect(DEV_CLASS *pPubDev,YKSELECT_CALLBACK pfnYkSelect)
 {
 	pPubDev->YkSelect=pfnYkSelect;
 	pPubDev->pDeviceUnit->YkSelect=_YkSelect;
 }
-static inline void RegisterYkExecute(CPubDev *pPubDev,YKEXECUTE_CALLBACK pfnYkExecute)
+static inline void RegisterYkExecute(DEV_CLASS *pPubDev,YKEXECUTE_CALLBACK pfnYkExecute)
 {
 	pPubDev->YkExecute=pfnYkExecute;
 	pPubDev->pDeviceUnit->YkExecute=_YkExecute;
 }
-static inline void RegisterYkCancel(CPubDev *pPubDev,YKCANCEL_CALLBACK pfnYkCancel)
+static inline void RegisterYkCancel(DEV_CLASS *pPubDev,YKCANCEL_CALLBACK pfnYkCancel)
 {
 	pPubDev->YkCancel=pfnYkCancel;
 	pPubDev->pDeviceUnit->YkCancel=_YkCancel;
@@ -184,12 +190,12 @@ static inline void RegisterYkOperations(struct DEV_CLASS *pPubDev,YKOPERATION_CA
 	if (pfnYkCancel)
 		pPubDev->RegisterYkCancel(pPubDev,pfnYkCancel);
 }
-static inline void RegisterSetDeviceTime(CPubDev *pPubDev,SETDEVICETIME_CALLBACK pfnSetDeviceTime)
+static inline void RegisterSetDeviceTime(DEV_CLASS *pPubDev,SETDEVICETIME_CALLBACK pfnSetDeviceTime)
 {
 	pPubDev->SetDeviceTime=pfnSetDeviceTime;
 	pPubDev->pDeviceUnit->SetDeviceTime=_SetDeviceTime;
 }
-static inline void RegisterResetDevice(CPubDev *pPubDev,RESETDEVICE_CALLBACK pfnResetDevice)
+static inline void RegisterResetDevice(DEV_CLASS *pPubDev,RESETDEVICE_CALLBACK pfnResetDevice)
 {
 	pPubDev->ResetDeviceStatus=pfnResetDevice;
 	pPubDev->pDeviceUnit->ResetDeviceStatus=_ResetDeviceStatus;
@@ -229,7 +235,7 @@ static inline void RegisterOnReconnect(struct DEV_CLASS *pPubDev,DESTROY_CALLBAC
 //////////////////////////////////////////////////////////////////////////
 /*发送接收相关*/
 
-static inline BOOL PollSendFrame(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,LUA_RECV_CALLBACK pfnRecvCallBack,BOOL bRecvUseFrame)
+static inline BOOL PollSendFrame(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,const LUA_RECV_CALLBACK pfnRecvCallBack)
 {
 	DeviceUnit *pDeviceUnit=pPubDev->pDeviceUnit;
 	if (pSend && wSize<BUFFER_SIZE) {
@@ -242,12 +248,12 @@ static inline BOOL PollSendFrame(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSi
 	}
 	return FALSE;
 }
-static BOOL InsertSendFrame(struct DEV_CLASS *pPubDev,BYTE *pSend,WORD cbSendSize,LUA_RECV_CALLBACK pfnRecvCallBack,BOOL bRecvUseFrame)
+static BOOL InsertSendFrame(struct DEV_CLASS *pPubDev,BYTE *pSend,WORD cbSendSize,const LUA_RECV_CALLBACK pfnRecvCallBack)
 {
 	DeviceUnit *pDeviceUnit=pPubDev->pDeviceUnit;
 	SENDFRAME_LIST *pInsertSendList=&pPubDev->m_InsertSendList;
 	SENDFRAME_INFO *pInsertSend=NULL;
-	pInsertSend=pInsertSendList->AddHead(pInsertSendList,pSend,cbSendSize,pfnRecvCallBack,bRecvUseFrame);
+	pInsertSend=pInsertSendList->AddHead(pInsertSendList,pSend,cbSendSize,pfnRecvCallBack);
 	if (pInsertSend) {
 		pDeviceUnit->InsertRawFrame(pDeviceUnit,pSend,cbSendSize,eCid_InsertSendFrame);
 		DEBUG_PRINT(pPubDev,"Insert Frame!!!");
@@ -280,12 +286,12 @@ static inline BYTE* MakeFrame(struct DEV_CLASS *pPubDev,BYTE byCmd, BYTE *pData,
 	if (pwSize) *pwSize=wSize;
 	return pBuffer;
 }
-static inline BOOL SendFrame(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,LUA_RECV_CALLBACK pfnRecvCallBack,BOOL bRecvUseFrame)
+static inline BOOL SendFrame(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,const LUA_RECV_CALLBACK pfnRecvCallBack)
 {
 	if (pPubDev->m_bInPollingSend)
-		pPubDev->PollSendFrame(pPubDev,pSend,wSize,pfnRecvCallBack,bRecvUseFrame);
+		pPubDev->PollSendFrame(pPubDev,pSend,wSize,pfnRecvCallBack);
 	else
-		pPubDev->InsertSendFrame(pPubDev,pSend,wSize,pfnRecvCallBack,bRecvUseFrame);
+		pPubDev->InsertSendFrame(pPubDev,pSend,wSize,pfnRecvCallBack);
 	
 	return TRUE;
 }
@@ -300,18 +306,18 @@ static inline BYTE Get_RecvFrameType(struct DEV_CLASS *pPubDev)
 //////////////////////////////////////////////////////////////////////////
 /*间隔发送*/
 
-static INTERVALSEND_INFO* RegisterIntervalSend(struct DEV_CLASS *pPubDev,DWORD dwIntervalSec,BYTE *pSend,WORD cbSendSize,LUA_RECV_CALLBACK pfnRecvCallback,BOOL bRecvUseFrame)
+static INTERVALSEND_INFO* RegisterIntervalSend(struct DEV_CLASS *pPubDev,DWORD dwIntervalSec,BYTE *pSend,WORD cbSendSize,const LUA_RECV_CALLBACK pfnRecvCallback)
 {
 	INTERVALSEND_LIST *pIntervalSendList=&pPubDev->m_IntervalsendList;
 	INTERVALSEND_INFO *pIntervalSend=NULL;
-	pIntervalSend=pIntervalSendList->Add(pIntervalSendList,dwIntervalSec,pSend,cbSendSize,pfnRecvCallback,bRecvUseFrame);
+	pIntervalSend=pIntervalSendList->Add(pIntervalSendList,dwIntervalSec,pSend,cbSendSize,pfnRecvCallback);
 	if (NULL==pIntervalSend) {
 		TRACE("RegisterIntervalSend error");
 	}
 	return pIntervalSend;
 }
 
-static INTERVALSEND_INFO* RegisterIntervalSend_Callback(struct DEV_CLASS *pPubDev,DWORD dwIntervalSec,LUA_SEND_CALLBACK pfnSendCallback)
+static INTERVALSEND_INFO* RegisterIntervalSend_Callback(struct DEV_CLASS *pPubDev,DWORD dwIntervalSec,const LUA_SEND_CALLBACK pfnSendCallback)
 {
 	INTERVALSEND_LIST *pIntervalSendList=&pPubDev->m_IntervalsendList;
 	INTERVALSEND_INFO *pIntervalSend=NULL;
@@ -674,9 +680,12 @@ static BOOL ExplainLinkData(struct _DeviceUnit * pDeviceUnit,BYTE *pBuf,WORD byS
 		||!pDeviceUnit->pChannel)
 		return FALSE;
 	
-	CPubDev * pPubDev=(CPubDev*)pDeviceUnit->pExDeviceUnit;
-	//ChannelUnit * pChannelUnit=pDeviceUnit->pChannel;		
-	CFrameUnit *m_pRFrame=pDeviceUnit->pRFrameUnit;
+	DEV_CLASS * pPubDev=(DEV_CLASS*)pDeviceUnit->pExDeviceUnit;
+	ChannelUnit * pChannelUnit=pDeviceUnit->pChannel;
+	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pChannelUnit->m_ChannelNo);
+	if (!pLuaChannel) return FALSE;
+
+	CFrameUnit *pRFrame=pDeviceUnit->pRFrameUnit;
 	SENDFRAME_LIST *pInsertSendList=&pPubDev->m_InsertSendList;
 	SENDFRAME_INFO *pSendInfo=NULL;
 	BYTE mCID;
@@ -696,14 +705,14 @@ static BOOL ExplainLinkData(struct _DeviceUnit * pDeviceUnit,BYTE *pBuf,WORD byS
 		return FALSE;
 	}
 	
-	if(pSendInfo->m_bRecvUseFrame)
+	if(pRFrame)
 	{
-		if (m_pRFrame&&m_pRFrame->BufferToFrame&&m_pRFrame->BufferToFrame(m_pRFrame,pBuf,bySize)) {
-			pPubDev->m_byRecvFrameType=m_pRFrame->m_FrameType;
-			mCID=pPubDev->m_byRecvCID=m_pRFrame->m_CID;
-			mAddr=pPubDev->m_byRecvADDR=m_pRFrame->m_Addr;
-			pData=m_pRFrame->m_pData;
-			datalen=m_pRFrame->m_wLength;
+		if (pRFrame->BufferToFrame&&pRFrame->BufferToFrame(pRFrame,pBuf,bySize)) {
+			pPubDev->m_byRecvFrameType=pRFrame->m_FrameType;
+			mCID=pPubDev->m_byRecvCID=pRFrame->m_CID;
+			mAddr=pPubDev->m_byRecvADDR=pRFrame->m_Addr;
+			pData=pRFrame->m_pData;
+			datalen=pRFrame->m_wLength;
 			if (mAddr!=pPubDev->Get_LinkAddr(pPubDev))
 			{
 				DEBUG_PRINT(pPubDev,"ExplainLink Addr Error!");
@@ -720,7 +729,7 @@ static BOOL ExplainLinkData(struct _DeviceUnit * pDeviceUnit,BYTE *pBuf,WORD byS
 	
 	BOOL bRet=TRUE;
 	if (LUA_CALLBACK_VALID(pSendInfo->m_pfnRecvCallBack)) {
-		bRet = (HandleOnRecv(g_pLua,pPubDev,pSendInfo->m_pfnRecvCallBack,pData,datalen)>0);
+		bRet = (HandleOnRecv(pPubDev,pSendInfo->m_pfnRecvCallBack,pData,datalen)>0);
 	} else if (pPubDev->DefaultRecvCallback) {
 		bRet = pPubDev->DefaultRecvCallback(pPubDev,pData,datalen);
 	}
@@ -741,8 +750,15 @@ static BOOL RunPolling(struct _DeviceUnit * pDeviceUnit)
 	if(!pDeviceUnit||!pDeviceUnit->pExDeviceUnit||!pDeviceUnit->pChannel)
 		return FALSE;
 	
-	CPubDev * pPubDev=(CPubDev*)pDeviceUnit->pExDeviceUnit;	
+	ChannelUnit * pChannelUnit=pDeviceUnit->pChannel;
+	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pChannelUnit->m_ChannelNo);
+	if (!pLuaChannel) return FALSE;
+	DEV_CLASS * pPubDev=(DEV_CLASS*)pDeviceUnit->pExDeviceUnit;	
 	//////////////////////////////////////////////////////////////////////////
+	if (!pPubDev->m_bInitialized) {
+		pPubDev->m_bInitialized=TRUE;
+		HandleOnInit(pPubDev);
+	}
 	//Delay Explain Yx
 	/*
 	if (pPubDev->m_pYxDelayExplain_Head)
@@ -763,13 +779,18 @@ static BOOL RunPolling(struct _DeviceUnit * pDeviceUnit)
 		pPubDev->m_bConnectionState=FALSE;
 		
 	pPubDev->m_bInPollingSend=TRUE;
+	
+	if (pPubDev->PrePolling!=NULL && pPubDev->PrePolling(pPubDev))
+	{
+		goto __Polling_End;
+	}
 
 	SENDFRAME_INFO *pSendframeInfo=NULL;
 	INTERVALSEND_LIST *pIntervalSendList=&pPubDev->m_IntervalsendList;
 	INTERVALSEND_INFO *pIntervalSend=pIntervalSendList->GetTimeout(pIntervalSendList);
 	if (pIntervalSend) {
 		if (pIntervalSend->m_bUseSendCallback) {
-			if (HandleOnSend(g_pLua,pPubDev,pIntervalSend->m_pfnSendCallback)>0)
+			if (HandleOnSend(pPubDev,pIntervalSend->m_pfnSendCallback)>0)
 				goto __Polling_End;
 		}
 		else if (pIntervalSend->m_pSendframeInfo) {
@@ -777,16 +798,10 @@ static BOOL RunPolling(struct _DeviceUnit * pDeviceUnit)
 			if (pPubDev->SendFrame(pPubDev,
 				pSendframeInfo->m_pSend,
 				pSendframeInfo->m_cbSendSize,
-				pSendframeInfo->m_pfnRecvCallBack,
-				pSendframeInfo->m_bRecvUseFrame)) {
+				pSendframeInfo->m_pfnRecvCallBack)) {
 				goto __Polling_End;
 			}
 		}
-	}
-
-	if (pPubDev->PrePolling!=NULL && pPubDev->PrePolling(pPubDev))
-	{
-		goto __Polling_End;
 	}
 	/*
 	if (pPubDev->m_pPollSendFrame_Now==NULL)
@@ -819,11 +834,11 @@ __Polling_End:
 
 }
 
-static void InitPubDevDev(CPubDev	* pPubDev)
+static void InitPubDevDev(DEV_CLASS	* pPubDev)
 {
 	if(pPubDev)
 	{
-		memset(pPubDev,0,sizeof(CPubDev));
+		memset(pPubDev,0,sizeof(DEV_CLASS));
 		//////////////////////////////////////////////////////////////////////////
 		/*注册操作*/
 		pPubDev->RegisterYkSelect=RegisterYkSelect;
@@ -908,14 +923,17 @@ void InitExDevice(void* pbyDeviceUnit,void *pbyIoGlobal)
 	DeviceUnit * pDeviceUnit=(DeviceUnit*)pbyDeviceUnit;
 	if(pDeviceUnit)
 	{
-		CPubDev	* pPubDev=(CPubDev*)malloc(sizeof(CPubDev));
+		DEV_CLASS	* pPubDev=(DEV_CLASS*)malloc(sizeof(DEV_CLASS));
 		InitPubDevDev(pPubDev);
 
 		pPubDev->pDeviceUnit=(DeviceUnit*)pDeviceUnit;
 		pPubDev->pChannelUnit=(ChannelUnit*)pDeviceUnit->pChannel;
-
-		InitCommunication(pPubDev);
-		pPubDev->m_bInitComplete=TRUE;
+		NewLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
+		if (LoadDevScript(pPubDev,pDeviceUnit->m_FrameInterface.m_szFrameModbulName)>0) {
+			//Load success
+		} else {
+			pDeviceUnit->m_FrameInterface.m_szFrameModbulName[0]='\0';
+		}
 
 		pDeviceUnit->pExDeviceUnit=pPubDev;
 		pDeviceUnit->RunPolling=RunPolling;

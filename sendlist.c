@@ -1,7 +1,7 @@
 #include "sendlist.h"
 
 //////////////////////////////////////////////////////////////////////////
-SENDFRAME_INFO* NewSendframeInfo(BYTE *pSend,WORD cbSendSize,LUA_RECV_CALLBACK pfnRecvCallback,BOOL bRecvUseFrame)
+SENDFRAME_INFO* NewSendframeInfo(BYTE *pSend,WORD cbSendSize,const LUA_RECV_CALLBACK pfnRecvCallback)
 {
 	if (!pSend) return NULL;
 	SENDFRAME_INFO *pInfo=malloc(sizeof(SENDFRAME_INFO));
@@ -20,7 +20,6 @@ SENDFRAME_INFO* NewSendframeInfo(BYTE *pSend,WORD cbSendSize,LUA_RECV_CALLBACK p
 	pInfo->m_cbSendSize=cbSendSize;
 	memcpy(pInfo->m_pSend,pSend,cbSendSize);
 	COPY_LUA_CALLBACK(pInfo->m_pfnRecvCallBack,pfnRecvCallback);
-	pInfo->m_bRecvUseFrame=bRecvUseFrame;
 	return pInfo;
 }
 void FreeSendframeInfo(SENDFRAME_INFO *pInfo)
@@ -32,12 +31,12 @@ void FreeSendframeInfo(SENDFRAME_INFO *pInfo)
 }
 //////////////////////////////////////////////////////////////////////////
 
-SENDFRAME_INFO* AddHead(struct SENDFRAME_LIST* pList,BYTE *pSend,WORD cbSendSize,LUA_RECV_CALLBACK pfnRecvCallback,BOOL bRecvUseFrame)
+SENDFRAME_INFO* AddHead(struct SENDFRAME_LIST* pList,BYTE *pSend,WORD cbSendSize,const LUA_RECV_CALLBACK pfnRecvCallback)
 {
 	if (!pList) return NULL;
 	DWORD dwID=pList->m_dwAddedCount+1;
 	TR_LIST *pTRList=&pList->m_TRList;
-	SENDFRAME_INFO *pInfo=NewSendframeInfo(pSend,cbSendSize,pfnRecvCallback,bRecvUseFrame);
+	SENDFRAME_INFO *pInfo=NewSendframeInfo(pSend,cbSendSize,pfnRecvCallback);
 	if (NULL==pInfo) 
 		goto __err;
 
@@ -106,7 +105,7 @@ SENDFRAME_LIST* NewSendframeList()
 }
 //////////////////////////////////////////////////////////////////////////
 
-INTERVALSEND_INFO* NewIntervalsendInfo(DWORD dwIntervalSec,BYTE *pSend,WORD cbSendSize,LUA_RECV_CALLBACK pfnRecvCallback,BOOL bRecvUseFrame)
+INTERVALSEND_INFO* NewIntervalsendInfo(DWORD dwIntervalSec,BYTE *pSend,WORD cbSendSize,const LUA_RECV_CALLBACK pfnRecvCallback)
 {
 	INTERVALSEND_INFO *pInfo=malloc(sizeof(INTERVALSEND_INFO));
 	memset(pInfo,0,sizeof(INTERVALSEND_INFO));
@@ -114,7 +113,7 @@ INTERVALSEND_INFO* NewIntervalsendInfo(DWORD dwIntervalSec,BYTE *pSend,WORD cbSe
 		printf("\n NewIntervalsendInfo error : Failed to malloc(INTERVALSEND_INFO)");
 		return NULL;
 	}
-	pInfo->m_pSendframeInfo=NewSendframeInfo(pSend,cbSendSize,pfnRecvCallback,bRecvUseFrame);
+	pInfo->m_pSendframeInfo=NewSendframeInfo(pSend,cbSendSize,pfnRecvCallback);
 	if (NULL==pInfo->m_pSendframeInfo) {
 		free(pInfo);
 		printf("\n NewIntervalsendInfo error : Failed to malloc(SENDFRAME_INFO.m_pSendframeInfo)");
@@ -124,7 +123,7 @@ INTERVALSEND_INFO* NewIntervalsendInfo(DWORD dwIntervalSec,BYTE *pSend,WORD cbSe
 	pInfo->m_bUseSendCallback=FALSE;
 	return pInfo;
 }
-INTERVALSEND_INFO* NewIntervalsendInfo_Callback(DWORD dwIntervalSec,LUA_SEND_CALLBACK pfnSendCallback)
+INTERVALSEND_INFO* NewIntervalsendInfo_Callback(DWORD dwIntervalSec,const LUA_SEND_CALLBACK pfnSendCallback)
 {
 	INTERVALSEND_INFO *pInfo=malloc(sizeof(INTERVALSEND_INFO));
 	memset(pInfo,0,sizeof(INTERVALSEND_INFO));
@@ -145,12 +144,12 @@ void FreeIntervalInfo(INTERVALSEND_INFO *pInfo)
 	}
 }
 //////////////////////////////////////////////////////////////////////////
-INTERVALSEND_INFO* Add(struct INTERVALSEND_LIST* pList,DWORD dwIntervalSec,BYTE *pSend,WORD cbSendSize,LUA_RECV_CALLBACK pfnRecvCallback,BOOL bRecvUseFrame)
+INTERVALSEND_INFO* Add(struct INTERVALSEND_LIST* pList,DWORD dwIntervalSec,BYTE *pSend,WORD cbSendSize,const LUA_RECV_CALLBACK pfnRecvCallback)
 {
 	if (!pList) return NULL;
 	DWORD dwID=pList->m_dwAddedCount+1;
 	TR_LIST *pTRList=&pList->m_TRList;
-	INTERVALSEND_INFO *pInfo=NewIntervalsendInfo(dwIntervalSec,pSend,cbSendSize,pfnRecvCallback,bRecvUseFrame);
+	INTERVALSEND_INFO *pInfo=NewIntervalsendInfo(dwIntervalSec,pSend,cbSendSize,pfnRecvCallback);
 	if (NULL==pInfo) {
 		printf("\n INTERVALSEND_LIST.Add Error ID(%lu) : Failed to NewIntervalsendInfo",dwID);
 		goto __err;
@@ -176,7 +175,7 @@ __err:
 	FreeIntervalInfo(pInfo);
 	return NULL;
 }
-INTERVALSEND_INFO* Add_Callback(struct INTERVALSEND_LIST* pList,DWORD dwIntervalSec,LUA_SEND_CALLBACK pfnSendCallback)
+INTERVALSEND_INFO* Add_Callback(struct INTERVALSEND_LIST* pList,DWORD dwIntervalSec,const LUA_SEND_CALLBACK pfnSendCallback)
 {
 	if (!pList) return NULL;
 	DWORD dwID=pList->m_dwAddedCount+1;

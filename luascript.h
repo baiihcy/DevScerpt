@@ -1,7 +1,6 @@
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
-#include "dev.h"
 
 #ifndef H_LUASCRIPT
 #define H_LUASCRIPT
@@ -13,7 +12,13 @@
 #define STR_BUFFER_BASECLASS "buffer_baseclass"
 #define STR_CALLBACK "callback_array"
 #define STR_STATIC_CALLBACK "static_callback_array"
-#define MAX_SCRIPT_CLASS_INFO 128
+#define SCRIPT_CLASS_INFO_MAX 128
+
+#define LUA_SETINTEGER(_lua,_idx,_field,_num) \
+{\
+	lua_pushinteger((_lua),(_num));\
+	lua_setfield((_lua),(_idx),(_field));\
+}
 
 #define LUA_GETINTEGER(_lua,_idx,_field,_num,_pisnum) \
 {\
@@ -33,18 +38,12 @@ typedef struct SCRIPT_CLASS_INFO {
 	char szClassName[128];
 }SCRIPT_CLASS_INFO;
 
-typedef struct DEVICE_CALSS {
-	struct DEV_CLASS *pPubDev;
-	struct SCRIPT_CLASS_INFO *pScriptClassInfo;
-	BOOL bUseRecvProc;
-	char szRecvProc[128];
-	enum yk_Kind YkOperation;
-}DEVICE_CALSS;
-
 lua_State* InitLua();
+void FreeLua(lua_State* pLua);
+SCRIPT_CLASS_INFO* GetScriptClassInfo(const char szClassName[]);
+SCRIPT_CLASS_INFO* AddScriptClassInfo(const struct SCRIPT_CLASS_INFO* ScriptClassInfo);
+void ScriptName2ClassName(const char *szScriptName,char szClassName[128]);
 SCRIPT_CLASS_INFO* CreateScriptClass(lua_State *pLua, char *szScriptClassName);
-int LoadDevScript(lua_State *pLua,struct DEV_CLASS *pPubDev, char *szScriptName);
-int CallInterface(lua_State *pLua,struct DEV_CLASS *pPubDev,const char *szInterfce, int nArg, int nResult);
 int BufferToBytes(lua_State *pLua,int index,BYTE *pBuffer,int nSize);
 int BytesToBuffer(lua_State *pLua,BYTE *pBuffer,int nSize);
 

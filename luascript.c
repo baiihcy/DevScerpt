@@ -5,8 +5,6 @@
 
 int g_nScriptClassInfo=0;
 SCRIPT_CLASS_INFO g_arrScriptClassInfo[MAX_SCRIPT_CLASS_INFO];
-
-
 SCRIPT_CLASS_INFO* GetScriptClassInfo(const char szClassName[])
 {
 	int i;
@@ -23,6 +21,8 @@ SCRIPT_CLASS_INFO* AddScriptClassInfo(const struct SCRIPT_CLASS_INFO* ScriptClas
 		int index=g_nScriptClassInfo++;
 		g_arrScriptClassInfo[index]=*ScriptClassInfo;
 		return &g_arrScriptClassInfo[index];
+	} else {
+		printf("\n AddScriptClassInfo error : ScriptClassInfo num > SCRIPT_CLASS_INFO_MAX");
 	}
 	return NULL;
 }
@@ -164,6 +164,11 @@ lua_State* InitLua()
 	return pLua;
 }
 
+void FreeLua(lua_State *pLua)
+{
+	lua_close(pLua);
+}
+
 /*
 作用:创建脚本类并返回脚本类信息
 参数:pLua:LUA状态机，szScriptClassName:
@@ -216,87 +221,3 @@ SCRIPT_CLASS_INFO* CreateScriptClass(lua_State *pLua, char *szScriptClassName)
 	return pScriptClassInfo;
 }
 
-
-int LoadDevScript(lua_State *pLua, struct DEV_CLASS *pPubDev, char *szScriptName)
-{
-	if (!pLua || pPubDev==NULL || szScriptName==NULL) 
-		return -1;
-	char szClassName[128];
-	ScriptName2ClassName(szScriptName,szClassName);
-	SCRIPT_CLASS_INFO *pScriptClassInfo=GetScriptClassInfo(szClassName);
-	
-	if (NULL==pScriptClassInfo) /*未曾加载*/ {
-		char szFileName[255];
-		sprintf(szFileName,"devices/%s",szScriptName);
-		if (luaL_dofile(pLua,szFileName)!=LUA_OK) {
-			printf("\n LoadDevScript error : \n%s\n",lua_tostring(pLua,-1));
-			return -1;
-		}
-		if (lua_getglobal(pLua,STR_DEV_SCRIPT)==LUA_TNIL) {
-			lua_pop(pLua,1);
-			return 0;
-		}
-		
-		pScriptClassInfo=CreateScriptClass(pLua,szClassName);
-		//Reset DevScript
-		lua_pushnil(pLua);
-		lua_setglobal(pLua, STR_DEV_SCRIPT);
-	}
-
-	if (pScriptClassInfo) {
-		int DevInstanceKey = pPubDev->Get_DeviceNo(pPubDev);
-		lua_newtable(pLua);
-		lua_pushlightuserdata(pLua,(void*)pPubDev);
-		lua_setfield(pLua,-2,STR_DEV_UDATA);
-		//struct DEVICE_CALSS *pDevClass = lua_newuserdata(pLua, sizeof(struct DEVICE_CALSS));
-		lua_getfield(pLua, LUA_REGISTRYINDEX, STR_DEVS_INSTANCE);
-		lua_pushinteger(pLua, DevInstanceKey);
-		lua_pushvalue(pLua, -3);
-		lua_settable(pLua, -3);
-		lua_pop(pLua, 1); //pop STR_DEVS_INSTANCE
-
-
-		//TOP = pDevClass
-		luaL_getmetatable(pLua, szClassName);
-		lua_setmetatable(pLua, -2);
-		pPubDev->pScriptClassInfo=(void*)pScriptClassInfo;
-		lua_pop(pLua, 1); //pop pDevClass
-		return 1;
-	}
-	return 0;
-}
-
-/*
-说明:调用装置接口，调用前需要先把参数压栈；调用成功后结果会压栈
-返回值:如果调用成功则返回1;如果找不到接口则返回0;出错则返回-1
-*/
-int CallInterface(lua_State *pLua, struct DEV_CLASS *pPubDev, const char *szInterfce, int nArg, int nResult)
-{
-	if (!pLua || !pPubDev || !szInterfce || nArg<0 || nResult<0) return -1;
-	int DevInstanceKey = pPubDev->Get_DeviceNo(pPubDev);
-	int iRet=0;
-	lua_getfield(pLua, LUA_REGISTRYINDEX, STR_DEVS_INSTANCE); //push STR_DEVS_INSTANCE
-	lua_pushinteger(pLua, DevInstanceKey);
-	lua_gettable(pLua, -2); //push DevInstance
-	if (!lua_isnil(pLua, -1)) {
-		lua_getfield(pLua,-1,szInterfce);
-		if (lua_isfunction(pLua, -1)) {
-			lua_pushvalue(pLua, -2); //push DevInstance
-			if (nArg>0) {
-				int iArg;
-				for (iArg=0;iArg<nArg;iArg++)
-					lua_pushvalue(pLua,-(4+nArg));
-			}
-			if (lua_pcall(pLua, 1+nArg, nResult, 0)!=LUA_OK) {
-				printf("\n Call Interface[%s] error : \n%s\n",szInterfce,lua_tostring(pLua,-1));
-				iRet=-1;
-			}
-			iRet=1;
-		}
-		else lua_pop(pLua, 1); //pop szInterfce
-	}
-	if (!iRet) nResult=0;
-	lua_remove(pLua, -(nResult+1)); //pop DevInstance
-	lua_remove(pLua, -(nResult+1)); //pop STR_DEVS_INSTANCE
-	return iRet;
-}
