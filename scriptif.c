@@ -1,10 +1,10 @@
 #include "scriptif.h"
 
 //////////////////////////////////////////////////////////////////////////
-LUA_CHANNEL g_LuaChannels[CHANNEL_MAX]={};
+LUA_CHANNEL g_LuaChannels[MAX_CHANNEL]={};
 LUA_CHANNEL* GetLuaChannel(int nChannelNo)
 {
-	if (nChannelNo<0 || nChannelNo>=CHANNEL_MAX) 
+	if (nChannelNo<0 || nChannelNo>=MAX_CHANNEL) 
 		return NULL;
 	LUA_CHANNEL *pLuaChannel=&g_LuaChannels[nChannelNo];
 	if (pLuaChannel->nRef<=0 || NULL==pLuaChannel->pLua) {
@@ -15,7 +15,7 @@ LUA_CHANNEL* GetLuaChannel(int nChannelNo)
 }
 LUA_CHANNEL* NewLuaChannel(int nChannelNo)
 {
-	if (nChannelNo<0 || nChannelNo>=CHANNEL_MAX) 
+	if (nChannelNo<0 || nChannelNo>=MAX_CHANNEL) 
 		return NULL;
 	LUA_CHANNEL *pLuaChannel=&g_LuaChannels[nChannelNo];
 	if (0==pLuaChannel->nRef) {
@@ -50,7 +50,7 @@ void LuaChannelUnlock(LUA_CHANNEL *pLuaChannel)
 }
 void FreeLuaChannel(int nChannelNo) 
 {
-	if (nChannelNo<0 || nChannelNo>=CHANNEL_MAX) 
+	if (nChannelNo<0 || nChannelNo>=MAX_CHANNEL) 
 		return ;
 	LUA_CHANNEL *pLuaChannel=&g_LuaChannels[nChannelNo];
 	if (pLuaChannel->nRef>0) {
@@ -583,7 +583,7 @@ int luafunc_MailYCOne(lua_State *pLua)
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	return 0;
 }
-/*返回值:soe_unit={year,month,day,hour,min,sec,ms,yx_point,yx_state,action_value}*/
+/*返回值:soe_unit={year,month,day,hour,min,sec,ms,yx_index,yx_value,action_value}*/
 int luafunc_NewSOEUnit(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
@@ -600,7 +600,7 @@ int luafunc_NewSOEUnit(lua_State *pLua)
 			LUA_SETINTEGER(pLua,-1,"min",soe.m_Time.Min);
 			LUA_SETINTEGER(pLua,-1,"sec",soe.m_Time.Sec);
 			LUA_SETINTEGER(pLua,-1,"ms",soe.m_Time.MS);
-			LUA_SETINTEGER(pLua,-1,"yx_point",-1);
+			LUA_SETINTEGER(pLua,-1,"yx_index",-1);
 			LUA_SETINTEGER(pLua,-1,"yx_value",0);
 			LUA_SETINTEGER(pLua,-1,"action_value",0);
 			return 1;
@@ -609,7 +609,7 @@ int luafunc_NewSOEUnit(lua_State *pLua)
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	return 0;
 }
-/*参数:soe_unit={year,month,day,hour,min,sec,ms,yx_point,yx_state,action_value}*/
+/*参数:soe_unit={year,month,day,hour,min,sec,ms,yx_index,yx_value,action_value}*/
 int luafunc_MailSOE(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);
@@ -639,7 +639,7 @@ int luafunc_MailSOE(lua_State *pLua)
 				LUA_GETINTEGER(pLua,2,"ms",number,&bIsNum);
 				if (bIsNum) soe.m_Time.MS=number;
 				
-				LUA_GETINTEGER(pLua,2,"yx_point",soe.m_nYxIndex,NULL);
+				LUA_GETINTEGER(pLua,2,"yx_index",soe.m_nYxIndex,NULL);
 				LUA_GETINTEGER(pLua,2,"yx_value",soe.m_bYxState,NULL);
 				LUA_GETNUMBER(pLua,2,"action_value",soe.m_fValue,NULL);
 				if (soe.m_nYxIndex>0) {
@@ -736,7 +736,7 @@ int luafunc_SetKeepSend(lua_State *pLua)
 	lua_pop(pLua,1); //pop STR_DEV_UDATA
 	return 0;
 }
-/*参数:print_string*/
+/*参数:message*/
 int luafunc_DebugPrint(lua_State *pLua)
 {
 	luaL_checktype(pLua,1,LUA_TTABLE);

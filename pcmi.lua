@@ -12,13 +12,11 @@ function DevScript:OnInit()
 	--self:PollSendProc(0,"OnSend")
 end
 
-
-
 function DevScript:OnSend()
-    	self:DebugPrint("this is OnSend")
-    	self.poll_type=(self.poll_type+1)%2
-    	self:DebugPrint("poll_type="..tostring(self.poll_type))
-    	if self.poll_type==1 then
+	self:DebugPrint("this is OnSend")
+	self.poll_type=(self.poll_type+1)%2
+	self:DebugPrint("poll_type="..tostring(self.poll_type))
+	if self.poll_type==1 then
 		--local SendBuffer=self:MakeFrame(0x03,new_buffer({0x00,0x00,0x00,0x25}))
 		--local SendBuffer=new_buffer({0x01,0x03,0x00,0x00,0x00,0x25,0x84,0x11})
 		--self:Send(SendBuffer,nil,false)
@@ -31,17 +29,17 @@ function DevScript:OnSend()
 end
 
 function DevScript:OnExplainYx(buffer)
-    if buffer.len<2 then
-    	return false
-    end
-    self:MailYXByte(2,buffer:GetByte(0))
-    self:MailYXByte(10,buffer:GetByte(1))
-    return true
+	if buffer.len<2 then
+		return false
+	end
+	self:MailYXByte(2,buffer:GetByte(0))
+	self:MailYXByte(10,buffer:GetByte(1))
+	return true
 end
 
 function DevScript:OnRecv(buffer)
-    self:DebugPrint("this is OnRecv")
-    buffer:PrintBuffer()
+	self:DebugPrint("this is OnRecv")
+	buffer:PrintBuffer()
 	local num=buffer.len//2
 	for i = 0,num-1 do
 		self:MailYCOne(i,buffer:GetWord(i*2,true))

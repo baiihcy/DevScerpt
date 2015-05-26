@@ -19,16 +19,16 @@ function buffer:ScalcByteIndex(byte_index)
 function buffer:GetByte(byte_index)
 function buffer:GetBCD(byte_index)
 function buffer:GetWord(byte_index,swap_byte)
-function buffer:GetDWord(byte_index,swap_word,swap_byte)
 function buffer:GetUShort=GetWord
 function buffer:GetShort(byte_index,swap_byte)
+function buffer:GetDWord(byte_index,swap_word,swap_byte)
 function buffer:GetUInt=GetDWord
 function buffer:GetInt(byte_index,swap_word,swap_byte)
 function buffer:GetFloat(byte_index,swap_word,swap_byte)
-function buffer:GetDouble(byte_index)
+function buffer:GetDouble(byte_index)--赞不支持
 --设置Buffer方法
 function buffer:SetByte(byte_index,byte)
-function buffer:SetBCD(byte_index,byte)
+function buffer:SetBCD(byte_index,bcd_byte)
 function buffer:SetWord(byte_index,word,swap_byte)
 function buffer:SetDWord(byte_index,dword,swap_word,swap_byte)
 function buffer:SetFloat(byte_index,float,swap_word,swap_byte)
@@ -43,7 +43,7 @@ buffer_baseclass = {
 	----------------------------------------------------------------------------------------------
 	SetBuffer=function(self,arr,narr)
 		local ret=nil
-		if arr==nil then arr={} end
+		arr=arr or {}
 		if type(arr)=='table' then 
 			self.arr=arr
 			if narr then self.len=narr 
@@ -58,7 +58,7 @@ buffer_baseclass = {
 		else print("\n SetOffset error : offset type "..type(offset)) end
 	end,
 	ScalcByteIndex=function(self,byte_index)
-		if byte_index==nil then byte_index=0 end
+		byte_index=byte_index or 0
 		return self.offset+byte_index
 	end,
 	PrintBuffer=function(self)
@@ -76,33 +76,41 @@ buffer_baseclass = {
 	----------------------------------------------------------------------------------------------
 	--获取Buffer方法
 	GetByte=function(self,byte_index)
-		if byte_index==nil then byte_index=0 end
+		byte_index=byte_index or 0
 		byte_index=self:ScalcByteIndex(byte_index)
-		if byte_index>self.len or self.arr[byte_index]==nil then
+		if byte_index>=self.len or self.arr[byte_index]==nil then
 			return 0
 		end
 		return self.arr[byte_index]&0xff
 	end,
 	GetBCD=function(self,byte_index)
-		--if byte_index==nil then byte_index=0 end
+		--byte_index=byte_index or 0
 		byte=self:GetByte(byte_index)
 		return ((byte&0xf0)>>4)*10+byte&0x0f
 	end,
 	GetBit=function(self,byte_index,bit_index)
-		--if byte_index==nil then byte_index=0 end
+		--byte_index=byte_index or 0
 		if bit_index==nil then bit_index=0 end
 		return (self:GetByte(byte_index)>>(bit_index))&0x01
 	end,
 	GetWord=function(self,byte_index,swap_byte)
-		if byte_index==nil then byte_index=0 end
+		byte_index=byte_index or 0
 		if swap_byte then
 			return (self:GetByte(byte_index)<<8)+self:GetByte(byte_index+1)
 		else
 			return self:GetByte(byte_index)+(self:GetByte(byte_index+1)<<8)
 		end
 	end,
+	GetShort=function(self,byte_index,swap_byte)
+		byte_index=byte_index or 0
+		local short=self:GetWord(byte_index,swap_byte)
+		if (short&0x8000)~=0 then
+			short=-((short~0xffff)+1)
+		end
+		return short
+	end,
 	GetDWord=function(self,byte_index,swap_word,swap_byte)
-		if byte_index==nil then byte_index=0 end
+		byte_index=byte_index or 0
 		if swap_word then
 			if swap_byte then
 				return self:GetByte(byte_index+3)+(self:GetByte(byte_index+2)<<8)+(self:GetByte(byte_index+1)<<16)+(self:GetByte(byte_index)<<24)
@@ -117,16 +125,8 @@ buffer_baseclass = {
 			end
 		end
 	end,
-	GetShort=function(self,byte_index,swap_byte)
-		if byte_index==nil then byte_index=0 end
-		local short=self:GetWord(byte_index,swap_byte)
-		if (short&0x8000)~=0 then
-			short=-((short~0xffff)+1)
-		end
-		return short
-	end,
 	GetInt=function(self,byte_index,swap_word,swap_byte)
-		if byte_index==nil then byte_index=0 end
+		byte_index=byte_index or 0
 		local int=self:GetDWord(byte_index,swap_word,swap_byte)
 		if (int&0x80000000)~=0 then
 			int=-((int~0xffffffff)+1)
@@ -134,149 +134,191 @@ buffer_baseclass = {
 		return int
 	end,
 	GetFloat=function(self,byte_index,swap_word,swap_byte)
-		if byte_index==nil then byte_index=0 end
+		byte_index=byte_index or 0
 		local dword=self:GetDWord(byte_index,swap_word,swap_byte)
-		return self.DWordToFloat(dword)
+		local bin=string.pack("L",dword)
+		local float=string.unpack("f",bin)
+		return float
 	end,
 	----------------------------------------------------------------------------------------------
 	--设置Buffer方法
-	SetByte=function(self,byte,byte_index)
-		if byte==nil then byte=0 end
-		if byte_index==nil then byte_index=0 end
+	SetByte=function(self,byte_index,byte)
+		byte=byte or 0
+		byte_index=byte_index or 0
 		byte_index=self:ScalcByteIndex(byte_index)
-		if byte_index>self.len then
-			self.len=byte_index
+		if byte_index>=self.len then
+			self.len=byte_index+1
 		end
 		self.arr[byte_index]=byte&0xff
 	end,
-	SetBCD=function(self,byte,byte_index)
-		if byte==nil then byte=0 end
-		--if byte_index==nil then byte_index01 end
-		byte=((byte//10)<<4)+byte%10
-		self:SetByte(byte,byte_index)
-		return byte
+	SetBCD=function(self,byte_index,bcd_byte)
+		bcd_byte=bcd_byte or 0
+		--byte_index=byte_index or 0
+		bcd_byte=((bcd_byte//10)<<4)+bcd_byte%10
+		self:SetByte(byte_index,bcd_byte)
+		return bcd_byte
 	end,
-	SetWord=function(self,word,byte_index,swap_byte)
-		if word==nil then word=0 end
-		if byte_index==nil then byte_index=1 end
+	SetWord=function(self,byte_index,word,swap_byte)
+		word=word or 0
+		byte_index=byte_index or 0
 		if swap_byte then
-			self:SetByte(word>>8,byte_index)
-			self:SetByte(word,byte_index+1)
+			self:SetByte(byte_index,word>>8)
+			self:SetByte(byte_index+1,word)
 		else
-			self:SetByte(word,byte_index)
-			self:SetByte(word>>8,byte_index+1)
+			self:SetByte(byte_index,word)
+			self:SetByte(byte_index+1,word>>8)
 		end
 	end,
 	SetDWord=function(self,dword,byte_index,swap_word,swap_byte)
-		if dword==nil then dword=0 end
-		if byte_index==nil then byte_index=0 end
+		dword=dword or 0
+		byte_index=byte_index or 0
 		if swap_word then
 			if swap_byte then
-				self:SetByte(dword>>24,byte_index)
-				self:SetByte(dword>>16,byte_index+1)
-				self:SetByte(dword>>8,byte_index+2)
-				self:SetByte(dword,byte_index+3)
+				self:SetByte(byte_index,dword>>24)
+				self:SetByte(byte_index+1,dword>>16)
+				self:SetByte(byte_index+2,dword>>8)
+				self:SetByte(byte_index+3,dword)
 			else
-				self:SetByte(dword>>16,byte_index)
-				self:SetByte(dword>>24,byte_index+1)
-				self:SetByte(dword,byte_index+2)
-				self:SetByte(dword>>8,byte_index+3)
+				self:SetByte(byte_index,dword>>16)
+				self:SetByte(byte_index+1,dword>>24)
+				self:SetByte(byte_index+2,dword)
+				self:SetByte(byte_index+3,dword>>8)
 			end
 		else
 			if swap_byte then
-				self:SetByte(dword>>8,byte_index)
-				self:SetByte(dword,byte_index+1)
-				self:SetByte(dword>>24,byte_index+2)
-				self:SetByte(dword>>16,byte_index+3)
+				self:SetByte(byte_index,dword>>8)
+				self:SetByte(byte_index+1,dword)
+				self:SetByte(byte_index+2,dword>>24)
+				self:SetByte(byte_index+3,dword>>16)
 			else
-				self:SetByte(dword,byte_index)
-				self:SetByte(dword>>8,byte_index+1)
-				self:SetByte(dword>>16,byte_index+2)
-				self:SetByte(dword>>24,byte_index+3)
+				self:SetByte(byte_index,dword)
+				self:SetByte(byte_index+1,dword>>8)
+				self:SetByte(byte_index+2,dword>>16)
+				self:SetByte(byte_index+3,dword>>24)
 			end
 		end
 	end,
-	SetFloat=function(self,float,byte_index,swap_word,swap_byte)
-		if float==nil then float=0 end
-		if byte_index==nil then byte_index=0 end
-		local dword=self.FloatToDWord(float)
+	SetFloat=function(self,byte_index,float,swap_word,swap_byte)
+		float=float or 0
+		byte_index=byte_index or 0
+		local bin=string.pack("f",float)
+		local dword=string.unpack("L",bin)
 		self:SetDWord(dword,byte_index,swap_word,swap_byte)
 	end
 }
+buffer_baseclass.GetUShort=buffer_baseclass.GetWord
+buffer_baseclass.GetUInt=buffer_baseclass.GetDWord
 
 function new_buffer(arr,narr)
 	local buffer=setmetatable({},{__index=buffer_baseclass})
 	return buffer:SetBuffer(arr,narr)
 end
 -------------------------------------------------------------------------
+--[[
+devscript_baseclass 类,脚本类的基类
+备注：
+soe_unit={year,month,day,hour,min,sec,ms,yx_index,yx_value,action_value}
+]]
 devscript_baseclass = {
 	--接口
-	OnInit=function(self)
+	OnInit=function(dev_inst)
 	end,
-	OnSend=function(self,poll_count)
+	OnSend=function(dev_inst,poll_count)
 	end,
-	OnRecv=function(self,buffer,cid)
+	OnRecv=function(dev_inst,buffer,cmd)
 	end,
 	--[[可用PollSend/PollSendProc代替
-	OnTimer=function(self)
+	OnTimer=function(dev_inst)
 	end,
 	]]
-	OnYkSelect=function(self,yk_group,yk_onoff)
+	OnYkSelect=function(dev_inst,yk_group,yk_onoff)
 	end,
-	OnYkExecute=function(self,yk_group,yk_onoff)
+	OnYkExecute=function(dev_inst,yk_group,yk_onoff)
 	end,
-	OnYkCancel=function(self,yk_group,yk_onoff)
+	OnYkCancel=function(dev_inst,yk_group,yk_onoff)
 	end,
-	OnSetTime=function(self)
+	OnSetTime=function(dev_inst)
 	end,
-	OnReset=function(self)
-	end,
-	--初始化
-	PollSend=function(self,buffer,recv_proc,interval_sec)
-	end,
-	PollSendProc=function(self,send_proc,interval_sec)
+	OnReset=function(dev_inst)
 	end,
 	--获取属性
-	GetDeviceNo=function(self)
+	GetDeviceNo=function(dev_inst)
 	end,
-	GetChannelNo=function(self)
+	GetChannelNo=function(dev_inst)
 	end,
-	GetLinkAddr=function(self)
+	GetLinkAddr=function(dev_inst)
 	end,
-	GetLinkAddr2=function(self)
+	GetLinkAddr2=function(dev_inst)
 	end,
-	GetParam1=function(self)
+	GetParam1=function(dev_inst)
 	end,
-	GetParam2=function(self)
+	GetParam2=function(dev_inst)
 	end,
 	--设置属性
-	SetLinkAddr=function(self,addr)
+	SetLinkAddr=function(dev_inst,addr)
 	end,
 	--数据操作
-	GetYXOne=function(self,yx_index)
+	GetYXOne=function(dev_inst,yx_index)
 	end,
-	GetYCOne=function(self,yc_index)
+	GetYCOne=function(dev_inst,yc_index)
 	end,
-	MailYXOne=function(self,yx_index,yx_state)
+	MailYXOne=function(dev_inst,yx_index,yx_state)
 	end,
-	MailYXByte=function(self,yx_index,byte)
+	MailYXByte=function(dev_inst,yx_index,byte)
 	end,
-	MailYCOne=function(self,yc_index,yc_value)
+	MailYCOne=function(dev_inst,yc_index,yc_value)
 	end,
 	NewSOEUnit=function()
 	end,
-	MailSOE=function(self,soe_unit)
+	MailSOE=function(dev_inst,soe_unit)
 	end,
-	MailYKResult=function(self,yk_result)
+	MailYKResult=function(dev_inst,yk_result)
 	end,
 	--设备操作
-	MakeFrame=function(self,cid,buffer,frame_type)
+	MakeFrame=function(dev_inst,cmd,buffer,frame_type)
 	end,
-	Send=function(self,buffer,recv_proc)
+	Send=function(dev_inst,buffer,recv_proc)
 	end,
-	SetKeepSend=function(self,keep_sec)
+	PollSend=function(dev_inst,buffer,recv_proc,interval_sec)
+	end,
+	PollSendProc=function(dev_inst,send_proc,interval_sec)
+	end,
+	SetKeepSend=function(dev_inst,keep_sec)
 	end,
 	--调试
-	DebugPrint=function(self,print_string)
+	DebugPrint=function(dev_inst,message)
 	end
 }
+---------------------------------------------------------------------------
+--global api
+function PrintTable(t, indent, done)
+	--print ( string.format ('PrintTable type %s', type(keys)) )
+	if type(t) ~= "table" then return end
+	print("\n PrintTable:")
+	
+	done = done or {}
+	done[t] = true
+	indent = indent or 0
+	
+	local l = {}
+	for k, v in pairs(t) do
+		table.insert(l, k)
+	end
+	
+	table.sort(l)
+	for k, v in ipairs(l) do
+		local value = t[v]
+		
+		if type(value) == "table" and not done[value] then
+			done [value] = true
+			print(string.rep ("\t", indent)..tostring(v)..":")
+			PrintTable (value, indent + 1, done)
+		elseif type(value) == "userdata" and not done[value] then
+			done [value] = true
+			print(string.rep ("\t", indent)..tostring(v)..": "..tostring(value))
+			PrintTable ((getmetatable(value) and getmetatable(value).__index) or getmetatable(value), indent + 2, done)
+		else
+			print(string.rep ("\t", indent)..tostring(v)..": "..tostring(value))
+		end
+	end
+end

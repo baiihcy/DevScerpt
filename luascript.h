@@ -12,7 +12,7 @@
 #define STR_BUFFER_BASECLASS "buffer_baseclass"
 #define STR_CALLBACK "callback_array"
 #define STR_STATIC_CALLBACK "static_callback_array"
-#define SCRIPT_CLASS_INFO_MAX 128
+#define MAX_SCRIPT_CLASS_INFO 128
 
 #define LUA_SETINTEGER(_lua,_idx,_field,_num) \
 {\
