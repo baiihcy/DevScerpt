@@ -65,59 +65,70 @@ void FreeLuaChannel(int nChannelNo)
 //////////////////////////////////////////////////////////////////////////
 int LoadDevScript(DEV_CLASS *pPubDev, char *szScriptName)
 {
-	if (pPubDev==NULL || szScriptName==NULL)  return -1;
+	if (!pPubDev || !szScriptName)  return 0;
 	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return -1;
+	if (!pLuaChannel) return 0;
 	lua_State *pLua=pLuaChannel->pLua;
 	char szClassName[128];
 	ScriptName2ClassName(szScriptName,szClassName);
-	SCRIPT_CLASS_INFO *pScriptClassInfo=GetScriptClassInfo(szClassName);
 	
-	if (NULL==pScriptClassInfo) /*未曾加载*/ {
+	BOOL bHaveScriptClass=HaveScriptClass(pLua,szClassName);
+	if (!bHaveScriptClass) {
+		//未曾加载
 		char szFileName[255];
 		sprintf(szFileName,"devices/%s",szScriptName);
 		if (luaL_dofile(pLua,szFileName)!=LUA_OK) {
 			printf("\n LoadDevScript error : \n%s\n",lua_tostring(pLua,-1));
 			lua_pop(pLua,1); //pop error message
-			return -1;
+			return 0;
 		}
-		if (lua_getglobal(pLua,STR_DEV_SCRIPT)==LUA_TNIL) {
-			lua_pop(pLua,1);
+		if (lua_getglobal(pLua,STR_DEV_SCRIPT)!=LUA_TTABLE) {
+			printf("\n Invalid ScriptDev , type %s",lua_typename(pLua,lua_type(pLua,-1)));
+			lua_pop(pLua, 1); //pop DevScript
 			return 0;
 		}
 		
-		pScriptClassInfo=CreateScriptClass(pLua,szClassName);
+		//TOP DevScript
+		if (CreateScriptClass(pLua,szClassName)>0) {
+			bHaveScriptClass=TRUE;
+			lua_pop(pLua,1); //pop ScriptClass
+		}
 		//Reset DevScript
 		lua_pushnil(pLua);
 		lua_setglobal(pLua, STR_DEV_SCRIPT);
 	}
-	
-	if (pScriptClassInfo) {
+	if (bHaveScriptClass) {
 		int DevInstanceKey = pPubDev->Get_DeviceNo(pPubDev);
-		lua_newtable(pLua);
+		lua_newtable(pLua); //push DevInstance
+		//设置元表
+		if (GetScriptClassMetatable(pLua,szClassName)) 
+			lua_setmetatable(pLua,-2);
+		else 
+			printf("\n LoadDevScript error : Invalid ScriptClassMetatable (%s)",szClassName);
+		
+		//设置用户数据
 		lua_pushlightuserdata(pLua,(void*)pPubDev);
 		lua_setfield(pLua,-2,STR_DEV_UDATA);
-		//struct DEVICE_CALSS *pDevClass = lua_newuserdata(pLua, sizeof(struct DEVICE_CALSS));
-		lua_getfield(pLua, LUA_REGISTRYINDEX, STR_DEVS_INSTANCE);
+
+		if (lua_getfield(pLua, LUA_REGISTRYINDEX, STR_DEVS_INSTANCE)!=LUA_TTABLE) {
+			lua_newtable(pLua);
+			lua_pushvalue(pLua,-1);
+			lua_setfield(pLua,LUA_REGISTRYINDEX,STR_DEVS_INSTANCE);
+		}
 		lua_pushinteger(pLua, DevInstanceKey);
-		lua_pushvalue(pLua, -3);
+		lua_pushvalue(pLua, -3); //push DevInstance
 		lua_settable(pLua, -3);
 		lua_pop(pLua, 1); //pop STR_DEVS_INSTANCE
 		
-		
-		//TOP = pDevClass
-		luaL_getmetatable(pLua, szClassName);
-		lua_setmetatable(pLua, -2);
-		pPubDev->pScriptClassInfo=(void*)pScriptClassInfo;
-
+		//////////////////////////////////////////////////////////////////////////
 		//Set FrameModel
 		lua_getfield(pLua,-1,"frame_model");
 		const char *pFrameModel=lua_tostring(pLua,-1);
 		if (pFrameModel) pPubDev->SetFrameModule(pPubDev,pFrameModel);
 		lua_pop(pLua,1); //pop frame_model
-
-
-		lua_pop(pLua, 1); //pop pDevClass
+		//////////////////////////////////////////////////////////////////////////
+		
+		lua_pop(pLua, 1); //pop DevInstance
 		return 1;
 	}
 	return 0;
@@ -129,9 +140,9 @@ int LoadDevScript(DEV_CLASS *pPubDev, char *szScriptName)
 */
 int CallInterface(DEV_CLASS *pPubDev, const char *szInterfce, int nArg, int nResult)
 {
-	if (!pPubDev || !szInterfce || nArg<0 || nResult<0) return -1;
+	if (!pPubDev || !szInterfce || nArg<0 || nResult<0) return 0;
 	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return -1;
+	if (!pLuaChannel) return 0;
 	lua_State *pLua=pLuaChannel->pLua;
 	int DevInstanceKey = pPubDev->Get_DeviceNo(pPubDev);
 	int iRet=0;
@@ -168,9 +179,9 @@ int CallInterface(DEV_CLASS *pPubDev, const char *szInterfce, int nArg, int nRes
 */
 int HandleOnInit(DEV_CLASS *pPubDev)
 {
-	if (!pPubDev) return -1;
+	if (!pPubDev) return 0;
 	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return -1;
+	if (!pLuaChannel) return 0;
 	lua_State *pLua=pLuaChannel->pLua;
 	BOOL bRet=TRUE;
 
@@ -189,11 +200,11 @@ int HandleOnInit(DEV_CLASS *pPubDev)
 */
 int HandleOnSend(DEV_CLASS *pPubDev, const LUA_SEND_CALLBACK pSendCallback )
 {
-	if (!pPubDev) return -1;
+	if (!pPubDev) return 0;
 	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return -1;
+	if (!pLuaChannel) return 0;
 	lua_State *pLua=pLuaChannel->pLua;
-	printf("\n TOP=%d",lua_gettop(pLua));
+	TRACE(" TOP=%d",lua_gettop(pLua));
 	BOOL bRet=TRUE;
 	LUA_SEND_CALLBACK pInterface;
 	if (pSendCallback) strcpy(pInterface,pSendCallback);
@@ -215,9 +226,9 @@ int HandleOnSend(DEV_CLASS *pPubDev, const LUA_SEND_CALLBACK pSendCallback )
 int HandleOnRecv(DEV_CLASS *pPubDev, const LUA_RECV_CALLBACK pRecvCallback, BYTE *pBuffer, int nSize )
 {
 	if (!pPubDev ||  !pBuffer || nSize<=0) 
-		return -1;
+		return 0;
 	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return -1;
+	if (!pLuaChannel) return 0;
 	lua_State *pLua=pLuaChannel->pLua;
 	LUA_RECV_CALLBACK pInterface;
 	if (pRecvCallback) strcpy(pInterface,pRecvCallback);
@@ -243,9 +254,9 @@ int HandleOnRecv(DEV_CLASS *pPubDev, const LUA_RECV_CALLBACK pRecvCallback, BYTE
 */
 int HandleOnYk(DEV_CLASS *pPubDev, enum yk_Kind YkKind, BYTE byYkGroup, BOOL bYkOnoff)
 {
-	if (!pPubDev) return -1;
+	if (!pPubDev) return 0;
 	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return -1;
+	if (!pLuaChannel) return 0;
 	lua_State *pLua=pLuaChannel->pLua;
 	BOOL bRet=FALSE;
 	char szInterface[64];
@@ -282,9 +293,9 @@ int HandleOnYk(DEV_CLASS *pPubDev, enum yk_Kind YkKind, BYTE byYkGroup, BOOL bYk
 */
 int HandleOnReset(DEV_CLASS *pPubDev)
 {
-	if (!pPubDev) return -1;
+	if (!pPubDev) return 0;
 	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return -1;
+	if (!pLuaChannel) return 0;
 	lua_State *pLua=pLuaChannel->pLua;
 	BOOL bRet=FALSE;
 	
@@ -303,9 +314,9 @@ int HandleOnReset(DEV_CLASS *pPubDev)
 */
 int HandleOnSetTime(DEV_CLASS *pPubDev)
 {
-	if (!pPubDev) return -1;
+	if (!pPubDev) return 0;
 	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return -1;
+	if (!pLuaChannel) return 0;
 	lua_State *pLua=pLuaChannel->pLua;
 	BOOL bRet=FALSE;
 	
@@ -783,7 +794,7 @@ BOOL InitScriptBaseclass(lua_State *pLua)
 		return FALSE;
 	//////////////////////////////////////////////////////////////////////////
 	//创建ScriptBaseClass元表
-	luaL_newmetatable(pLua, STR_SCRIPTE_BASECLASS);
+	luaL_newmetatable(pLua, STR_SCRIPT_BASECLASS);
 	//元表.__index=元表
 	lua_pushvalue(pLua, -1);
 	lua_setfield(pLua, -2, "__index");

@@ -6,8 +6,9 @@
 #define H_LUASCRIPT
 #define STR_DEV_SCRIPT "DevScript"
 #define STR_DEV_UDATA "dev_udata"
-#define STR_SCRIPTE_BASECLASS "script_baseclass"
-#define STR_SCRIPT_CLASS "script_class"
+#define STR_SCRIPT_BASECLASS "script_baseclass"
+#define STR_SCRIPT_CLASS_METATABLE_SET "script_class_metatable_set"
+#define STR_SCRIPT_CLASS_SET "script_class_set"
 #define STR_DEVS_INSTANCE "devs_instance"
 #define STR_BUFFER_BASECLASS "buffer_baseclass"
 #define STR_CALLBACK "callback_array"
@@ -40,11 +41,14 @@ typedef struct SCRIPT_CLASS_INFO {
 
 lua_State* InitLua();
 void FreeLua(lua_State* pLua);
-SCRIPT_CLASS_INFO* GetScriptClassInfo(const char szClassName[]);
-SCRIPT_CLASS_INFO* AddScriptClassInfo(const struct SCRIPT_CLASS_INFO* ScriptClassInfo);
-void ScriptName2ClassName(const char *szScriptName,char szClassName[128]);
-SCRIPT_CLASS_INFO* CreateScriptClass(lua_State *pLua, char *szScriptClassName);
+int luaGetBaseclass(lua_State *pLua,int idx);
+int GetScriptClass(lua_State *pLua,const char szClassName[]);
+int GetScriptClassMetatable(lua_State *pLua,const char szClassName[]);
+BOOL HaveScriptClass(lua_State *pLua,const char szClassName[]);
+int CreateScriptClass(lua_State *pLua, char *szScriptClassName);
 int BufferToBytes(lua_State *pLua,int index,BYTE *pBuffer,int nSize);
 int BytesToBuffer(lua_State *pLua,BYTE *pBuffer,int nSize);
 
+int luaGetBaseclass(lua_State *pLua,int idx);
+void ScriptName2ClassName(const char *szScriptName,char szClassName[128]);
 #endif

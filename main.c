@@ -42,6 +42,6 @@ BOOL InitCommunication(struct DEV_CLASS *pPubDev)
 	pPubDev->RegisterResetDevice(pPubDev,ResetDevice);
 	pPubDev->RegisterYkOperations(pPubDev,YkSelect,YkExecute,NULL);
 	//LoadDevScript(pPubDev,"test.lua");
-	HandleOnInit(pPubDev);
+	//HandleOnInit(pPubDev);
 	return TRUE;
 }

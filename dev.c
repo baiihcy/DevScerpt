@@ -750,10 +750,13 @@ static BOOL RunPolling(struct _DeviceUnit * pDeviceUnit)
 	if(!pDeviceUnit||!pDeviceUnit->pExDeviceUnit||!pDeviceUnit->pChannel)
 		return FALSE;
 	
+	DEV_CLASS * pPubDev=(DEV_CLASS*)pDeviceUnit->pExDeviceUnit;	
 	ChannelUnit * pChannelUnit=pDeviceUnit->pChannel;
 	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pChannelUnit->m_ChannelNo);
-	if (!pLuaChannel) return FALSE;
-	DEV_CLASS * pPubDev=(DEV_CLASS*)pDeviceUnit->pExDeviceUnit;	
+	if (!pLuaChannel) {
+		TRACE("RunPolling error : invalid pLuaChannel");
+		return FALSE;
+	}
 	//////////////////////////////////////////////////////////////////////////
 	if (!pPubDev->m_bInitialized) {
 		pPubDev->m_bInitialized=TRUE;
@@ -928,11 +931,11 @@ void InitExDevice(void* pbyDeviceUnit,void *pbyIoGlobal)
 
 		pPubDev->pDeviceUnit=(DeviceUnit*)pDeviceUnit;
 		pPubDev->pChannelUnit=(ChannelUnit*)pDeviceUnit->pChannel;
-		NewLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-		if (LoadDevScript(pPubDev,pDeviceUnit->m_FrameInterface.m_szFrameModbulName)>0) {
+		LUA_CHANNEL *pLuaChannel=NewLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
+		if (pLuaChannel && LoadDevScript(pPubDev,pDeviceUnit->m_FrameInterface.m_szFrameModbulName)>0) {
 			//Load success
 		} else {
-			pDeviceUnit->m_FrameInterface.m_szFrameModbulName[0]='\0';
+			pPubDev->SetFrameModule(pPubDev,"null");
 		}
 
 		pDeviceUnit->pExDeviceUnit=pPubDev;

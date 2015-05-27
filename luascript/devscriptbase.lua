@@ -62,7 +62,7 @@ buffer_baseclass = {
 		return self.offset+byte_index
 	end,
 	PrintBuffer=function(self)
-		print("PrintBuffer: len="..tostring(self.len).." offset="..tostring(self.offset).." bytes="..tostring(self.len-self.offset))
+		print("\nPrintBuffer: len="..tostring(self.len).." offset="..tostring(self.offset).." bytes="..tostring(self.len-self.offset))
 		local str=''
 		for i=1+self.offset,self.len do
 			if self.arr[i] then
@@ -221,16 +221,13 @@ soe_unit={year,month,day,hour,min,sec,ms,yx_index,yx_value,action_value}
 ]]
 devscript_baseclass = {
 	--接口
+	--[[接口需要让用户自己定义
 	OnInit=function(dev_inst)
 	end,
 	OnSend=function(dev_inst,poll_count)
 	end,
 	OnRecv=function(dev_inst,buffer,cmd)
 	end,
-	--[[可用PollSend/PollSendProc代替
-	OnTimer=function(dev_inst)
-	end,
-	]]
 	OnYkSelect=function(dev_inst,yk_group,yk_onoff)
 	end,
 	OnYkExecute=function(dev_inst,yk_group,yk_onoff)
@@ -240,7 +237,11 @@ devscript_baseclass = {
 	OnSetTime=function(dev_inst)
 	end,
 	OnReset=function(dev_inst)
+	end,]]
+	--[[可用PollSend/PollSendProc代替
+	OnTimer=function(dev_inst)
 	end,
+	]]
 	--获取属性
 	GetDeviceNo=function(dev_inst)
 	end,

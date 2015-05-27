@@ -32,9 +32,6 @@ typedef struct DEV_CLASS
 	DeviceUnit * pDeviceUnit;
 	ChannelUnit *pChannelUnit;
 	//////////////////////////////////////////////////////////////////////////
-	//LUA SCRIPT
-	void *pScriptClassInfo;
-	//////////////////////////////////////////////////////////////////////////
 	/*×¢²á²Ù×÷*/
 	void (*RegisterYkSelect)(struct DEV_CLASS *pPubDev,YKSELECT_CALLBACK pfnYkSelect);
 	void (*RegisterYkExecute)(struct DEV_CLASS *pPubDev,YKEXECUTE_CALLBACK pfnYkExcute);
