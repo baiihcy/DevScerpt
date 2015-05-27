@@ -173,7 +173,7 @@ int BytesToBuffer(lua_State *pLua,BYTE *pBuffer,int nSize)
 		lua_pcall(pLua,1,0,0);*/
 	}
 	else {
-		iRet=-1;
+		iRet=0;
 		lua_pop(pLua,2); //pop new table(arr) & buffer_baseclass
 	}
 	return iRet;
