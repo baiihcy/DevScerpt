@@ -59,7 +59,7 @@ buffer_baseclass = {
 	end,
 	ScalcByteIndex=function(self,byte_index)
 		byte_index=byte_index or 0
-		return self.offset+byte_index
+		return self.offset+byte_index+1
 	end,
 	PrintBuffer=function(self)
 		print("\nPrintBuffer: len="..tostring(self.len).." offset="..tostring(self.offset).." bytes="..tostring(self.len-self.offset))
@@ -78,7 +78,7 @@ buffer_baseclass = {
 	GetByte=function(self,byte_index)
 		byte_index=byte_index or 0
 		byte_index=self:ScalcByteIndex(byte_index)
-		if byte_index>=self.len or self.arr[byte_index]==nil then
+		if byte_index>self.len or self.arr[byte_index]==nil then
 			return 0
 		end
 		return self.arr[byte_index]&0xff
@@ -136,74 +136,98 @@ buffer_baseclass = {
 	GetFloat=function(self,byte_index,swap_word,swap_byte)
 		byte_index=byte_index or 0
 		local dword=self:GetDWord(byte_index,swap_word,swap_byte)
+		print("float bin="..dword)
 		local bin=string.pack("L",dword)
 		local float=string.unpack("f",bin)
 		return float
 	end,
 	----------------------------------------------------------------------------------------------
 	--ÉèÖÃBuffer·½·¨
-	SetByte=function(self,byte_index,byte)
-		byte=byte or 0
-		byte_index=byte_index or 0
+	SetByte=function(self,byte_index,...)
+		local bytes={...}
 		byte_index=self:ScalcByteIndex(byte_index)
-		if byte_index>=self.len then
-			self.len=byte_index+1
+		if byte_index+(#bytes-1)>self.len then
+			self.len=byte_index+(#bytes-1)
 		end
-		self.arr[byte_index]=byte&0xff
-	end,
-	SetBCD=function(self,byte_index,bcd_byte)
-		bcd_byte=bcd_byte or 0
-		--byte_index=byte_index or 0
-		bcd_byte=((bcd_byte//10)<<4)+bcd_byte%10
-		self:SetByte(byte_index,bcd_byte)
-		return bcd_byte
-	end,
-	SetWord=function(self,byte_index,word,swap_byte)
-		word=word or 0
-		byte_index=byte_index or 0
-		if swap_byte then
-			self:SetByte(byte_index,word>>8)
-			self:SetByte(byte_index+1,word)
-		else
-			self:SetByte(byte_index,word)
-			self:SetByte(byte_index+1,word>>8)
+		for i=1,#bytes do
+			self.arr[byte_index]=bytes[i]&0xff
+			byte_index=byte_index+1
 		end
 	end,
-	SetDWord=function(self,dword,byte_index,swap_word,swap_byte)
-		dword=dword or 0
-		byte_index=byte_index or 0
-		if swap_word then
+	SetBCD=function(self,byte_index,...)
+		local bcd_bytes={...}
+		byte_index=self:ScalcByteIndex(byte_index)
+		if byte_index+(#bcd_bytes-1)>self.len then
+			self.len=byte_index+(#bcd_bytes-1)
+		end
+		for i=1,#bcd_bytes do
+			self.arr[byte_index]=((bcd_bytes[i]//10)<<4)+bcd_bytes[i]%10
+			byte_index=byte_index+1
+		end
+	end,
+	SetWord=function(self,byte_index,swap_byte,...)
+		assert(type(swap_byte)=='boolean',"bad argument #2 to 'SetWord' : boolean expected ,got "..type(swap_byte))
+		local words={...}
+		local word
+		for i=1,#words do
+			word=words[i]
 			if swap_byte then
-				self:SetByte(byte_index,dword>>24)
-				self:SetByte(byte_index+1,dword>>16)
-				self:SetByte(byte_index+2,dword>>8)
-				self:SetByte(byte_index+3,dword)
+				self:SetByte(byte_index,word>>8,word)
 			else
-				self:SetByte(byte_index,dword>>16)
-				self:SetByte(byte_index+1,dword>>24)
-				self:SetByte(byte_index+2,dword)
-				self:SetByte(byte_index+3,dword>>8)
+				self:SetByte(byte_index,word,word>>8)
 			end
-		else
-			if swap_byte then
-				self:SetByte(byte_index,dword>>8)
-				self:SetByte(byte_index+1,dword)
-				self:SetByte(byte_index+2,dword>>24)
-				self:SetByte(byte_index+3,dword>>16)
-			else
-				self:SetByte(byte_index,dword)
-				self:SetByte(byte_index+1,dword>>8)
-				self:SetByte(byte_index+2,dword>>16)
-				self:SetByte(byte_index+3,dword>>24)
-			end
+			byte_index=byte_index+2
 		end
 	end,
-	SetFloat=function(self,byte_index,float,swap_word,swap_byte)
-		float=float or 0
-		byte_index=byte_index or 0
-		local bin=string.pack("f",float)
-		local dword=string.unpack("L",bin)
-		self:SetDWord(dword,byte_index,swap_word,swap_byte)
+	SetDWord=function(self,byte_index,swap_word,swap_byte,...)
+		assert(type(swap_byte)=='boolean',"bad argument #2 to 'SetWord' : boolean expected ,got "..type(swap_byte))
+		assert(type(swap_word)=='boolean',"bad argument #3 to 'SetDWord' : boolean expected ,got "..type(swap_word))
+		local dwords={...}
+		local dword
+		for i=1,#dwords do
+			dword=dwords[i]
+			if swap_word then
+				if swap_byte then
+					self:SetByte(byte_index,dword>>24,dword>>16,dword>>8,dword)
+				else
+					self:SetByte(byte_index,dword>>16,dword>>24,dword,dword>>8)
+				end
+			else
+				if swap_byte then
+					self:SetByte(byte_index,dword>>8,dword,dword>>24,dword>>16)
+				else
+					self:SetByte(byte_index,dword,dword>>8,dword>>16,dword>>24)
+				end
+			end
+			byte_index=byte_index+4
+		end
+	end,
+	SetFloat=function(self,byte_index,swap_word,swap_byte,...)
+		assert(type(swap_byte)=='boolean',"bad argument #2 to 'SetWord' : boolean expected ,got "..type(swap_byte))
+		assert(type(swap_word)=='boolean',"bad argument #3 to 'SetDWord' : boolean expected ,got "..type(swap_word))
+		local floats={...}
+		local float
+		local bin
+		local dword
+		for i=1,#floats do
+			float=floats[i]
+			bin=string.pack("f",float)
+			dword=string.unpack("L",bin)
+			if swap_word then
+				if swap_byte then
+					self:SetByte(byte_index,dword>>24,dword>>16,dword>>8,dword)
+				else
+					self:SetByte(byte_index,dword>>16,dword>>24,dword,dword>>8)
+				end
+			else
+				if swap_byte then
+					self:SetByte(byte_index,dword>>8,dword,dword>>24,dword>>16)
+				else
+					self:SetByte(byte_index,dword,dword>>8,dword>>16,dword>>24)
+				end
+			end
+			byte_index=byte_index+4
+		end
 	end
 }
 buffer_baseclass.GetUShort=buffer_baseclass.GetWord
@@ -294,7 +318,7 @@ devscript_baseclass = {
 --global api
 function PrintTable(t, indent, done)
 	--print ( string.format ('PrintTable type %s', type(keys)) )
-	if type(t) ~= "table" then return end
+	if type(t) ~= 'table' then return end
 	print("\n PrintTable:")
 	
 	done = done or {}

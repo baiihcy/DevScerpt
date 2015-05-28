@@ -35,12 +35,17 @@ BOOL YkExecute(struct DEV_CLASS *pPubDev,WORD wOutPort,BOOL bOnOff)
 {
 	return HandleOnYk(pPubDev,k_Execute,wOutPort,bOnOff);
 }
+BOOL YkCancel(struct DEV_CLASS *pPubDev,WORD wOutPort,BOOL bOnOff)
+{
+	return HandleOnYk(pPubDev,k_Cancel,wOutPort,bOnOff);
+}
 BOOL InitCommunication(struct DEV_CLASS *pPubDev)
 {
 	pPubDev->RegisterPrePolling(pPubDev,PrePolling);
 	pPubDev->RegisterDefaultRecvCallback(pPubDev,DefaultRecv);
 	pPubDev->RegisterResetDevice(pPubDev,ResetDevice);
-	pPubDev->RegisterYkOperations(pPubDev,YkSelect,YkExecute,NULL);
+	pPubDev->RegisterSetDeviceTime(pPubDev,SetTime);
+	pPubDev->RegisterYkOperations(pPubDev,YkSelect,YkExecute,YkCancel);
 	//LoadDevScript(pPubDev,"test.lua");
 	//HandleOnInit(pPubDev);
 	return TRUE;

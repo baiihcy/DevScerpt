@@ -57,12 +57,8 @@ void FinishInitExDevice(void* pbyDeviceUnit)
 	DeviceUnit * pDeviceUnit=(DeviceUnit*)pbyDeviceUnit;
 	if(pDeviceUnit)
 	{
-		DEV_CLASS * pPubDev=(DEV_CLASS*)pDeviceUnit->pExDeviceUnit;
+		//DEV_CLASS * pPubDev=(DEV_CLASS*)pDeviceUnit->pExDeviceUnit;
 		
-		if (!InitCommunication(pPubDev)) {
-			printf("\n InitCommunication error");
-		}
-		pPubDev->m_bInitComplete=TRUE;
 	}
 }
 
@@ -91,27 +87,27 @@ static void SetFrameModule(struct DEV_CLASS *pPubDev,const char szFrameModbulNam
 static BOOL _YkSelect(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff)
 {
 	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
+	pPubDev->m_LastYkKind=k_Select;
 	if (pPubDev->YkSelect &&
 		pPubDev->YkSelect(pPubDev,wOutPort,bOnOff)) {
-		pPubDev->m_LastYkKind=k_Select;
 	}
 	return FALSE;
 }
 static BOOL _YkExecute(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff)
 {
 	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
+	pPubDev->m_LastYkKind=k_Execute;
 	if (pPubDev->YkExecute &&
 		pPubDev->YkExecute(pPubDev,wOutPort,bOnOff)) {
-		pPubDev->m_LastYkKind=k_Execute;
 	}
 	return FALSE;
 }
 static BOOL _YkCancel(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff)
 {
 	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
+	pPubDev->m_LastYkKind=k_Cancel;
 	if (pPubDev->YkCancel &&
 		pPubDev->YkCancel(pPubDev,wOutPort,bOnOff)) {
-		pPubDev->m_LastYkKind=k_Cancel;
 	}
 	return FALSE;
 }
@@ -931,12 +927,18 @@ void InitExDevice(void* pbyDeviceUnit,void *pbyIoGlobal)
 
 		pPubDev->pDeviceUnit=(DeviceUnit*)pDeviceUnit;
 		pPubDev->pChannelUnit=(ChannelUnit*)pDeviceUnit->pChannel;
+
 		LUA_CHANNEL *pLuaChannel=NewLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
 		if (pLuaChannel && LoadDevScript(pPubDev,pDeviceUnit->m_FrameInterface.m_szFrameModbulName)>0) {
 			//Load success
 		} else {
 			pPubDev->SetFrameModule(pPubDev,"null");
 		}
+
+		if (!InitCommunication(pPubDev)) {
+			printf("\n InitCommunication error");
+		}
+		pPubDev->m_bInitComplete=TRUE;
 
 		pDeviceUnit->pExDeviceUnit=pPubDev;
 		pDeviceUnit->RunPolling=RunPolling;

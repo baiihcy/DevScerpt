@@ -158,14 +158,16 @@ int CallInterface(DEV_CLASS *pPubDev, const char *szInterfce, int nArg, int nRes
 				for (iArg=0;iArg<nArg;iArg++)
 					lua_pushvalue(pLua,-(4+nArg));
 			}
-			if (lua_pcall(pLua, 1+nArg, nResult, 0)!=LUA_OK) {
+			if (lua_pcall(pLua, 1+nArg, nResult, 0)==LUA_OK) {
+				iRet=1;
+			}else{
 				printf("\n Call Interface[%s] error : \n%s\n",szInterfce,lua_tostring(pLua,-1));
 				lua_pop(pLua,1); //pop error message
-				iRet=-1;
 			}
-			iRet=1;
+		} else {
+			TRACE("Invalid Interface [%s]",szInterfce);
+			lua_pop(pLua, 1); //pop szInterfce
 		}
-		else lua_pop(pLua, 1); //pop szInterfce
 	}
 	if (!iRet) nResult=0;
 	lua_remove(pLua, -(nResult+1)); //pop DevInstance
@@ -267,8 +269,9 @@ int HandleOnYk(DEV_CLASS *pPubDev, enum yk_Kind YkKind, BYTE byYkGroup, BOOL bYk
 	case k_Execute:
 		strcpy(szInterface,"OnYkExecute");
 		break;
-		// 	case k_Cancel:
-		// 		break;
+	case k_Cancel:
+		strcpy(szInterface,"OnYkCancel");
+		break;
 	default:
 		return 0;
 		break;
