@@ -1,336 +1,6 @@
 #include "scriptif.h"
 
-//////////////////////////////////////////////////////////////////////////
-LUA_CHANNEL g_LuaChannels[MAX_CHANNEL]={};
-LUA_CHANNEL* GetLuaChannel(int nChannelNo)
-{
-	if (nChannelNo<0 || nChannelNo>=MAX_CHANNEL) 
-		return NULL;
-	LUA_CHANNEL *pLuaChannel=&g_LuaChannels[nChannelNo];
-	if (pLuaChannel->nRef<=0 || NULL==pLuaChannel->pLua) {
-		printf("\n GetLuaChannel error : ref=%d,pLua=%x",pLuaChannel->nRef,(unsigned int)pLuaChannel->pLua);
-		return NULL;
-	}
-	return pLuaChannel;
-}
-LUA_CHANNEL* NewLuaChannel(int nChannelNo)
-{
-	if (nChannelNo<0 || nChannelNo>=MAX_CHANNEL) 
-		return NULL;
-	LUA_CHANNEL *pLuaChannel=&g_LuaChannels[nChannelNo];
-	if (0==pLuaChannel->nRef) {
-		pLuaChannel->pLua=InitLua();
-		if (!pLuaChannel->pLua) {
-			printf("\n NewLuaChannel error : Failed to InitLua");
-			return NULL;
-		}
-		//pLuaChannel->mutex=PTHREAD_MUTEX_INITIALIZER;
-		if (pthread_mutex_init(&pLuaChannel->mutex,NULL)!=0) {
-			printf("\n pthread_mutex_init error");
-		}
-		pLuaChannel->nRef++;
-		return pLuaChannel;
-	} else if (pLuaChannel->nRef>0) {
-		pLuaChannel->nRef++;
-		return pLuaChannel;
-	} else {
-		pLuaChannel->nRef=0;
-		return NULL;
-	}
-}
-void LuaChannelLock(LUA_CHANNEL *pLuaChannel)
-{
-	if (!pLuaChannel) return;
-	pthread_mutex_lock(&pLuaChannel->mutex);
-}
-void LuaChannelUnlock(LUA_CHANNEL *pLuaChannel)
-{
-	if (!pLuaChannel) return;
-	pthread_mutex_unlock(&pLuaChannel->mutex);
-}
-void FreeLuaChannel(int nChannelNo) 
-{
-	if (nChannelNo<0 || nChannelNo>=MAX_CHANNEL) 
-		return ;
-	LUA_CHANNEL *pLuaChannel=&g_LuaChannels[nChannelNo];
-	if (pLuaChannel->nRef>0) {
-		pLuaChannel->nRef--;
-		if (0==pLuaChannel->nRef) {
-			FreeLua(pLuaChannel->pLua);
-			pthread_mutex_destroy(&pLuaChannel->mutex);
-			pLuaChannel->pLua=NULL;
-		} 
-	}
-}
-//////////////////////////////////////////////////////////////////////////
-int LoadDevScript(DEV_CLASS *pPubDev, char *szScriptName)
-{
-	if (!pPubDev || !szScriptName)  return 0;
-	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return 0;
-	lua_State *pLua=pLuaChannel->pLua;
-	char szClassName[128];
-	ScriptName2ClassName(szScriptName,szClassName);
-	
-	BOOL bHaveScriptClass=HaveScriptClass(pLua,szClassName);
-	if (!bHaveScriptClass) {
-		//未曾加载
-		char szFileName[255];
-		sprintf(szFileName,"devices/%s",szScriptName);
-		if (luaL_dofile(pLua,szFileName)!=LUA_OK) {
-			printf("\n LoadDevScript error : \n%s\n",lua_tostring(pLua,-1));
-			lua_pop(pLua,1); //pop error message
-			return 0;
-		}
-		if (lua_getglobal(pLua,STR_DEV_SCRIPT)!=LUA_TTABLE) {
-			printf("\n Invalid ScriptDev , type %s",lua_typename(pLua,lua_type(pLua,-1)));
-			lua_pop(pLua, 1); //pop DevScript
-			return 0;
-		}
-		
-		//TOP DevScript
-		if (CreateScriptClass(pLua,szClassName)>0) {
-			bHaveScriptClass=TRUE;
-			lua_pop(pLua,1); //pop ScriptClass
-		}
-		//Reset DevScript
-		lua_pushnil(pLua);
-		lua_setglobal(pLua, STR_DEV_SCRIPT);
-	}
-	if (bHaveScriptClass) {
-		int DevInstanceKey = pPubDev->Get_DeviceNo(pPubDev);
-		lua_newtable(pLua); //push DevInstance
-		//设置元表
-		if (GetScriptClassMetatable(pLua,szClassName)) 
-			lua_setmetatable(pLua,-2);
-		else 
-			printf("\n LoadDevScript error : Invalid ScriptClassMetatable (%s)",szClassName);
-		
-		//设置用户数据
-		lua_pushlightuserdata(pLua,(void*)pPubDev);
-		lua_setfield(pLua,-2,STR_DEV_UDATA);
 
-		if (lua_getfield(pLua, LUA_REGISTRYINDEX, STR_DEVS_INSTANCE)!=LUA_TTABLE) {
-			lua_newtable(pLua);
-			lua_pushvalue(pLua,-1);
-			lua_setfield(pLua,LUA_REGISTRYINDEX,STR_DEVS_INSTANCE);
-		}
-		lua_pushinteger(pLua, DevInstanceKey);
-		lua_pushvalue(pLua, -3); //push DevInstance
-		lua_settable(pLua, -3);
-		lua_pop(pLua, 1); //pop STR_DEVS_INSTANCE
-		
-		//////////////////////////////////////////////////////////////////////////
-		//Set FrameModel
-		lua_getfield(pLua,-1,"frame_model");
-		const char *pFrameModel=lua_tostring(pLua,-1);
-		if (pFrameModel) pPubDev->SetFrameModule(pPubDev,pFrameModel);
-		lua_pop(pLua,1); //pop frame_model
-		//////////////////////////////////////////////////////////////////////////
-		
-		lua_pop(pLua, 1); //pop DevInstance
-		return 1;
-	}
-	return 0;
-}
-
-/*
-说明:调用装置接口，调用前需要先把参数压栈；调用成功后结果会压栈
-返回值:如果调用成功则返回1;如果找不到接口则返回0;出错则返回-1
-*/
-int CallInterface(DEV_CLASS *pPubDev, const char *szInterfce, int nArg, int nResult)
-{
-	if (!pPubDev || !szInterfce || nArg<0 || nResult<0) return 0;
-	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return 0;
-	lua_State *pLua=pLuaChannel->pLua;
-	int DevInstanceKey = pPubDev->Get_DeviceNo(pPubDev);
-	int iRet=0;
-	lua_getfield(pLua, LUA_REGISTRYINDEX, STR_DEVS_INSTANCE); //push STR_DEVS_INSTANCE
-	lua_pushinteger(pLua, DevInstanceKey);
-	lua_gettable(pLua, -2); //push DevInstance
-	if (!lua_isnil(pLua, -1)) {
-		lua_getfield(pLua,-1,szInterfce);
-		if (lua_isfunction(pLua, -1)) {
-			lua_pushvalue(pLua, -2); //push DevInstance
-			if (nArg>0) {
-				int iArg;
-				for (iArg=0;iArg<nArg;iArg++)
-					lua_pushvalue(pLua,-(4+nArg));
-			}
-			if (lua_pcall(pLua, 1+nArg, nResult, 0)==LUA_OK) {
-				iRet=1;
-			}else{
-				printf("\n Call Interface[%s] error : \n%s\n",szInterfce,lua_tostring(pLua,-1));
-				lua_pop(pLua,1); //pop error message
-			}
-		} else {
-			TRACE("Invalid Interface [%s]",szInterfce);
-			lua_pop(pLua, 1); //pop szInterfce
-		}
-	}
-	if (!iRet) nResult=0;
-	lua_remove(pLua, -(nResult+1)); //pop DevInstance
-	lua_remove(pLua, -(nResult+1)); //pop STR_DEVS_INSTANCE
-	return iRet;
-}
-
-/*
-说明:触发OnInit接口
-返回值:找不到OnInit接口直接返回TRUE，否则返回OnInit接口的返回值
-*/
-int HandleOnInit(DEV_CLASS *pPubDev)
-{
-	if (!pPubDev) return 0;
-	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return 0;
-	lua_State *pLua=pLuaChannel->pLua;
-	BOOL bRet=TRUE;
-
-	LuaChannelLock(pLuaChannel);
-	if (CallInterface(pPubDev,"OnInit",0,1)>0) {
-		bRet=lua_toboolean(pLua,-1);
-		lua_pop(pLua, 1); //pop lua_pcall return value
-	}
-	LuaChannelUnlock(pLuaChannel);
-	return bRet;
-}
-
-/*
-说明:触发OnSend接口
-返回值:找不到OnSend接口直接返回FALSE，否则返回OnSend接口的返回值
-*/
-int HandleOnSend(DEV_CLASS *pPubDev, const LUA_SEND_CALLBACK pSendCallback )
-{
-	if (!pPubDev) return 0;
-	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return 0;
-	lua_State *pLua=pLuaChannel->pLua;
-	TRACE(" TOP=%d",lua_gettop(pLua));
-	BOOL bRet=TRUE;
-	LUA_SEND_CALLBACK pInterface;
-	if (pSendCallback) strcpy(pInterface,pSendCallback);
-	else strcpy(pInterface,"OnSend");
-
-	LuaChannelLock(pLuaChannel);
-	if (CallInterface(pPubDev,pInterface,0,1)>0) {
-		bRet=lua_toboolean(pLua,-1);
-		lua_pop(pLua, 1); //pop lua_pcall return value
-	}
-	LuaChannelUnlock(pLuaChannel);
-	return bRet;
-}
-
-/*
-说明:触发OnRecv接口
-返回值:找不到OnRecv接口直接返回TRUE，否则返回OnRecv接口的返回值
-*/
-int HandleOnRecv(DEV_CLASS *pPubDev, const LUA_RECV_CALLBACK pRecvCallback, BYTE *pBuffer, int nSize )
-{
-	if (!pPubDev ||  !pBuffer || nSize<=0) 
-		return 0;
-	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return 0;
-	lua_State *pLua=pLuaChannel->pLua;
-	LUA_RECV_CALLBACK pInterface;
-	if (pRecvCallback) strcpy(pInterface,pRecvCallback);
-	else strcpy(pInterface,"OnRecv");
-	BOOL bRet=TRUE;
-
-	LuaChannelLock(pLuaChannel);
-	if (BytesToBuffer(pLua,pBuffer,nSize)>=0) {
-		if (CallInterface(pPubDev,pInterface,1,1)>0) {
-			bRet=lua_toboolean(pLua,-1);
-			lua_pop(pLua, 1); //pop lua_pcall return value
-		}
-
-		lua_pop(pLua,1); //pop buffer
-	}
-	LuaChannelUnlock(pLuaChannel);
-	return bRet;
-}
-
-/*
-说明:触发OnYkSelect/OnYkExecute接口
-返回值:找不到接口直接返回FALSE，否则返回接口的返回值
-*/
-int HandleOnYk(DEV_CLASS *pPubDev, enum yk_Kind YkKind, BYTE byYkGroup, BOOL bYkOnoff)
-{
-	if (!pPubDev) return 0;
-	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return 0;
-	lua_State *pLua=pLuaChannel->pLua;
-	BOOL bRet=FALSE;
-	char szInterface[64];
-	switch  (YkKind) {
-	case k_Select:
-		strcpy(szInterface,"OnYkSelect");
-		break;
-	case k_Execute:
-		strcpy(szInterface,"OnYkExecute");
-		break;
-	case k_Cancel:
-		strcpy(szInterface,"OnYkCancel");
-		break;
-	default:
-		return 0;
-		break;
-	}
-	pPubDev->m_LastYkKind=YkKind;
-	
-	LuaChannelLock(pLuaChannel);
-	lua_pushinteger(pLua,byYkGroup);
-	lua_pushinteger(pLua,bYkOnoff);
-	if (CallInterface(pPubDev,szInterface,2,1)>0) {
-		bRet=lua_toboolean(pLua,-1);
-		lua_pop(pLua, 1); //pop lua_pcall return value
-	}
-	lua_pop(pLua,2); //pop CallInterface args
-	LuaChannelUnlock(pLuaChannel);
-	return bRet;
-}
-
-/*
-说明:触发OnReset接口
-返回值:找不到OnReset接口直接返回FALSE，否则返回OnReset接口的返回值
-*/
-int HandleOnReset(DEV_CLASS *pPubDev)
-{
-	if (!pPubDev) return 0;
-	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return 0;
-	lua_State *pLua=pLuaChannel->pLua;
-	BOOL bRet=FALSE;
-	
-	LuaChannelLock(pLuaChannel);
-	if (CallInterface(pPubDev,"OnReset",0,1)>0) {
-		bRet=lua_toboolean(pLua,-1);
-		lua_pop(pLua, 1); //pop lua_pcall return value
-	}
-	LuaChannelUnlock(pLuaChannel);
-	return bRet;
-}
-
-/*
-说明:触发OnSetTime接口
-返回值:找不到OnSetTime接口直接返回FALSE，否则返回OnSetTime接口的返回值
-*/
-int HandleOnSetTime(DEV_CLASS *pPubDev)
-{
-	if (!pPubDev) return 0;
-	LUA_CHANNEL *pLuaChannel=GetLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-	if (!pLuaChannel) return 0;
-	lua_State *pLua=pLuaChannel->pLua;
-	BOOL bRet=FALSE;
-	
-	LuaChannelLock(pLuaChannel);
-	if (CallInterface(pPubDev,"OnSetTime",0,1)>0) {
-		bRet=lua_toboolean(pLua,-1);
-		lua_pop(pLua, 1); //pop lua_pcall return value
-	}
-	LuaChannelUnlock(pLuaChannel);
-	return bRet;
-}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -365,7 +35,7 @@ int luafunc_PollSend(lua_State *pLua)
 	if (pPubDev) {
 		BYTE pBuffer[256];
 		WORD wBufferSize=256;
-		wBufferSize=BufferToBytes(pLua,2,pBuffer,wBufferSize);
+		wBufferSize=luaBufferToBytes(pLua,2,pBuffer,wBufferSize);
 		if (wBufferSize>0) {
 			const char *pRecvProc=lua_tostring(pLua,3);
 			DWORD dwInterval=lua_tointeger(pLua,4);
@@ -696,15 +366,15 @@ int luafunc_MakeFrame(lua_State *pLua)
 		BYTE byCmd=(BYTE)lua_tointeger(pLua,2);
 		BYTE byFrameType=(BYTE)lua_tointeger(pLua,4);
 		if (lua_istable(pLua,3)) {
-			char pBuffer[256];
+			BYTE pBuffer[256];
 			int nSize=sizeof(pBuffer);
-			nSize=BufferToBytes(pLua,3,pBuffer,nSize);
+			nSize=luaBufferToBytes(pLua,3,pBuffer,nSize);
 			if (nSize>0) {
 				BYTE *pFrameBuffer=NULL;
 				WORD wFrameSize=0;
 				pFrameBuffer=pPubDev->MakeFrame(pPubDev,byCmd,pBuffer,byFrameType,nSize,&wFrameSize);
 				if (pFrameBuffer && wFrameSize>0 && 
-					BytesToBuffer(pLua,pFrameBuffer,wFrameSize)>0) {
+					luaBytesToBuffer(pLua,pFrameBuffer,wFrameSize)>0) {
 					return 1;
 				}
 			}
@@ -722,9 +392,9 @@ int luafunc_Send(lua_State *pLua)
 		DEV_CLASS *pPubDev=(DEV_CLASS*)lua_touserdata(pLua,-1);
 		if (pPubDev) {
 			if (lua_istable(pLua,2)) {
-				char pBuffer[256];
+				BYTE pBuffer[256];
 				int nSize=sizeof(pBuffer);
-				nSize=BufferToBytes(pLua,2,pBuffer,nSize);
+				nSize=luaBufferToBytes(pLua,2,pBuffer,nSize);
 				if (nSize>0) {
 					const char *pRecvProcName=lua_tostring(pLua,3);
 

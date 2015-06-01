@@ -136,7 +136,6 @@ buffer_baseclass = {
 	GetFloat=function(self,byte_index,swap_word,swap_byte)
 		byte_index=byte_index or 0
 		local dword=self:GetDWord(byte_index,swap_word,swap_byte)
-		print("float bin="..dword)
 		local bin=string.pack("L",dword)
 		local float=string.unpack("f",bin)
 		return float
@@ -315,35 +314,54 @@ devscript_baseclass = {
 	end
 }
 ---------------------------------------------------------------------------
---global api
-function PrintTable(t, indent, done)
-	--print ( string.format ('PrintTable type %s', type(keys)) )
-	if type(t) ~= 'table' then return end
-	print("\n PrintTable:")
-	
-	done = done or {}
-	done[t] = true
-	indent = indent or 0
-	
-	local l = {}
-	for k, v in pairs(t) do
-		table.insert(l, k)
-	end
-	
-	table.sort(l)
-	for k, v in ipairs(l) do
-		local value = t[v]
-		
-		if type(value) == "table" and not done[value] then
-			done [value] = true
-			print(string.rep ("\t", indent)..tostring(v)..":")
-			PrintTable (value, indent + 1, done)
-		elseif type(value) == "userdata" and not done[value] then
-			done [value] = true
-			print(string.rep ("\t", indent)..tostring(v)..": "..tostring(value))
-			PrintTable ((getmetatable(value) and getmetatable(value).__index) or getmetatable(value), indent + 2, done)
-		else
-			print(string.rep ("\t", indent)..tostring(v)..": "..tostring(value))
+--util lib
+util={
+	GetBaseclass=function (class)
+		local metatable=getmetatable(class)
+		local baseclass=nil
+		if metatable then
+			baseclass=metatable.__index
 		end
+		return baseclass
+	end,
+	PrintTable=function (t, indent, done)
+		--print ( string.format ('PrintTable type %s', type(keys)) )
+		if type(t) ~= 'table' then return end
+		print("\n PrintTable:")
+		
+		done = done or {}
+		done[t] = true
+		indent = indent or 0
+		
+		local l = {}
+		for k, v in pairs(t) do
+			table.insert(l, k)
+		end
+		
+		table.sort(l)
+		for k, v in ipairs(l) do
+			local value = t[v]
+			
+			if type(value) == "table" and not done[value] then
+				done [value] = true
+				print(string.rep ("\t", indent)..tostring(v)..":")
+				util.PrintTable (value, indent + 1, done)
+			elseif type(value) == "userdata" and not done[value] then
+				done [value] = true
+				print(string.rep ("\t", indent)..tostring(v)..": "..tostring(value))
+				util.PrintTable ((getmetatable(value) and getmetatable(value).__index) or getmetatable(value), indent + 2, done)
+			else
+				print(string.rep ("\t", indent)..tostring(v)..": "..tostring(value))
+			end
+		end
+	end,
+	Time=function (time_table)
+		return os.time(time_table)
+	end,
+	Date=function (time)
+		return os.date("*t",time)
+	end,
+	DiffTime=function (time2,time1)
+		return os.difftime(time2,time1)
 	end
-end
+}

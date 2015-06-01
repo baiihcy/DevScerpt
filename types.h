@@ -1,5 +1,5 @@
-#include "../../../txj/libio.h"
-#include "../../../txj/appmc.h"
+#include "libtxj.h"
+#include "appmc.h"
 
 #ifndef H_DEV_TYPES
 #define H_DEV_TYPES

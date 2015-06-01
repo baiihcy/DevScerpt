@@ -1,23 +1,41 @@
 include ../../../mhead
-
-CFLAGS= -g -Wall -fPIC -I/usr/local/arm/include
-LDFLAGS= -shared -L/usr/local/arm/lib
+#CC=
+#SYSOBJECTS=
+#SYSCFLAGS=
+#SYSLDFLAGS=
+#TO_PREFIX=
 
 DEVNAME= luadev.so
-all: $(DEVNAME) 
-	
+MYCFLAGS= -g -Wall -fPIC -I/usr/local/include
+MYLDFLAGS= -shared -L/usr/local/lib
+
+ifeq ($(CC),arm-linux-gcc)
+	MYCFLAGS= -g -Wall -fPIC -I/usr/local/arm/include
+	MYLDFLAGS= -shared -L/usr/local/arm/lib
+endif
+
+ifeq ($(CC),powerpc-linux-gcc)
+	MYCFLAGS= -g -Wall -fPIC -I/usr/local/powerpc/include
+	MYLDFLAGS= -shared -L/usr/local/powerpc/lib
+endif
+
 SRC= trlist.c sendlist.c dev.c main.c DataProcess.c luascript.c scriptif.c
-TGT=$(SRC:.c=.o) ../../../txj/libio.o
+TGT=$(SRC:.c=.o)
+
+
+
+$(ALL): $(DEVNAME) 
 
 $(SRC):types.h trlist.h sendlist.h dev.h main.h DataProcess.h luascript.h scriptif.h
 	@touch $@
-
-clean:
-	-rm -f  *.gdb *.elf *.o *.so
 	
 %.o: %.c 
-	$(CC) -c $(CFLAGS) $?
+	$(CC) -c $(SYSCFLAGS) $(MYCFLAGS) $?
 
 $(DEVNAME): $(TGT)
-	$(CC) $(LDFLAGS) -o $@ $(TGT) -dl -llua -ldl -lm
-	cp ./$(DEVNAME) ../../../bin/devices
+	$(CC) $(SYSLDFLAGS) $(MYLDFLAGS) -o $@ $(SYSOBJECTS) $(TGT) -dl -llua -ldl -lm
+	cp ./$(DEVNAME) $(TO_PREFIX)/devices
+
+clean:
+	rm -f  *.gdb *.elf *.o *.so
+	

@@ -725,7 +725,7 @@ static BOOL ExplainLinkData(struct _DeviceUnit * pDeviceUnit,BYTE *pBuf,WORD byS
 	
 	BOOL bRet=TRUE;
 	if (LUA_CALLBACK_VALID(pSendInfo->m_pfnRecvCallBack)) {
-		bRet = (HandleOnRecv(pPubDev,pSendInfo->m_pfnRecvCallBack,pData,datalen)>0);
+		bRet = (luaHandleOnRecv(pPubDev,pSendInfo->m_pfnRecvCallBack,pData,datalen)>0);
 	} else if (pPubDev->DefaultRecvCallback) {
 		bRet = pPubDev->DefaultRecvCallback(pPubDev,pData,datalen);
 	}
@@ -756,7 +756,7 @@ static BOOL RunPolling(struct _DeviceUnit * pDeviceUnit)
 	//////////////////////////////////////////////////////////////////////////
 	if (!pPubDev->m_bInitialized) {
 		pPubDev->m_bInitialized=TRUE;
-		HandleOnInit(pPubDev);
+		luaHandleOnInit(pPubDev);
 	}
 	//Delay Explain Yx
 	/*
@@ -789,7 +789,7 @@ static BOOL RunPolling(struct _DeviceUnit * pDeviceUnit)
 	INTERVALSEND_INFO *pIntervalSend=pIntervalSendList->GetTimeout(pIntervalSendList);
 	if (pIntervalSend) {
 		if (pIntervalSend->m_bUseSendCallback) {
-			if (HandleOnSend(pPubDev,pIntervalSend->m_pfnSendCallback)>0)
+			if (luaHandleOnSend(pPubDev,pIntervalSend->m_pfnSendCallback)>0)
 				goto __Polling_End;
 		}
 		else if (pIntervalSend->m_pSendframeInfo) {
@@ -929,7 +929,7 @@ void InitExDevice(void* pbyDeviceUnit,void *pbyIoGlobal)
 		pPubDev->pChannelUnit=(ChannelUnit*)pDeviceUnit->pChannel;
 
 		LUA_CHANNEL *pLuaChannel=NewLuaChannel(pPubDev->Get_ChannelNo(pPubDev));
-		if (pLuaChannel && LoadDevScript(pPubDev,pDeviceUnit->m_FrameInterface.m_szFrameModbulName)>0) {
+		if (pLuaChannel && luaLoadDevScript(pPubDev,pDeviceUnit->m_FrameInterface.m_szFrameModbulName)>0) {
 			//Load success
 		} else {
 			pPubDev->SetFrameModule(pPubDev,"null");

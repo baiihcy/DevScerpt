@@ -13,31 +13,31 @@
 
 BOOL PrePolling(struct DEV_CLASS *pPubDev)
 {
-	return HandleOnSend(pPubDev,NULL);
+	return luaHandleOnSend(pPubDev,NULL);
 }
 BOOL DefaultRecv(struct DEV_CLASS *pPubDev,BYTE *pRecv,int nSize)
 {
-	return HandleOnRecv(pPubDev,NULL,pRecv,nSize);
+	return luaHandleOnRecv(pPubDev,NULL,pRecv,nSize);
 }
 BOOL ResetDevice(struct DEV_CLASS * pPubDev)
 {
-	return HandleOnReset(pPubDev);
+	return luaHandleOnReset(pPubDev);
 }
 BOOL SetTime(struct DEV_CLASS * pPubDev)
 {
-	return HandleOnSetTime(pPubDev);
+	return luaHandleOnSetTime(pPubDev);
 }
 BOOL YkSelect(struct DEV_CLASS *pPubDev,WORD wOutPort,BOOL bOnOff)
 {
-	return HandleOnYk(pPubDev,k_Select,wOutPort,bOnOff);
+	return luaHandleOnYk(pPubDev,k_Select,wOutPort,bOnOff);
 }
 BOOL YkExecute(struct DEV_CLASS *pPubDev,WORD wOutPort,BOOL bOnOff)
 {
-	return HandleOnYk(pPubDev,k_Execute,wOutPort,bOnOff);
+	return luaHandleOnYk(pPubDev,k_Execute,wOutPort,bOnOff);
 }
 BOOL YkCancel(struct DEV_CLASS *pPubDev,WORD wOutPort,BOOL bOnOff)
 {
-	return HandleOnYk(pPubDev,k_Cancel,wOutPort,bOnOff);
+	return luaHandleOnYk(pPubDev,k_Cancel,wOutPort,bOnOff);
 }
 BOOL InitCommunication(struct DEV_CLASS *pPubDev)
 {
