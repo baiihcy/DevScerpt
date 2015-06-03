@@ -6,8 +6,8 @@ include ../../../mhead
 #TO_PREFIX=
 
 DEVNAME= luadev.so
-MYCFLAGS= -g -Wall -fPIC -I/usr/local/include
-MYLDFLAGS= -shared -L/usr/local/lib
+MYCFLAGS= -g  -fPIC -I/usr/local/include
+MYLDFLAGS= -shared -rdynamic -L/usr/local/lib
 
 ifeq ($(CC),arm-linux-gcc)
 	MYCFLAGS= -g -Wall -fPIC -I/usr/local/arm/include

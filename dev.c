@@ -3,7 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "dev.h"
-#include "scriptif.h"
+#include "luascript.h"
 
 IoGlobal * pGlobal=NULL;
 SCADAUnit*   pScadaUnit=NULL;
@@ -66,7 +66,7 @@ void FinishInitExDevice(void* pbyDeviceUnit)
 
 ///////////////////////////设备特性部分///////////////////////////////////////////////
 
-static void SetFrameModule(struct DEV_CLASS *pPubDev,const char szFrameModbulName[256])
+void SetFrameModule(struct DEV_CLASS *pPubDev,const char szFrameModbulName[256])
 {
 	if (pPubDev->m_bInitComplete){
 		DEBUG_PRINT(pPubDev,"Only In InitCommunication to Set FrameModbul!");
@@ -84,7 +84,7 @@ static void SetFrameModule(struct DEV_CLASS *pPubDev,const char szFrameModbulNam
 
 //////////////////////////////////////////////////////////////////////////
 /*注册操作*/
-static BOOL _YkSelect(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff)
+BOOL _YkSelect(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff)
 {
 	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
 	pPubDev->m_LastYkKind=k_Select;
@@ -93,7 +93,7 @@ static BOOL _YkSelect(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff
 	}
 	return FALSE;
 }
-static BOOL _YkExecute(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff)
+BOOL _YkExecute(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff)
 {
 	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
 	pPubDev->m_LastYkKind=k_Execute;
@@ -102,7 +102,7 @@ static BOOL _YkExecute(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOf
 	}
 	return FALSE;
 }
-static BOOL _YkCancel(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff)
+BOOL _YkCancel(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff)
 {
 	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
 	pPubDev->m_LastYkKind=k_Cancel;
@@ -111,14 +111,14 @@ static BOOL _YkCancel(struct _DeviceUnit * pDeviceUnit,WORD wOutPort,BOOL bOnOff
 	}
 	return FALSE;
 }
-static BOOL _SetDeviceTime(struct _DeviceUnit * pDeviceUnit,BOOL bFF)
+BOOL _SetDeviceTime(struct _DeviceUnit * pDeviceUnit,BOOL bFF)
 {
 	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
 	if (pPubDev->SetDeviceTime)
 		return pPubDev->SetDeviceTime(pPubDev);
 	return FALSE;
 }
-static BOOL _ResetDeviceStatus(struct _DeviceUnit * pDeviceUnit)
+BOOL _ResetDeviceStatus(struct _DeviceUnit * pDeviceUnit)
 {
 	DEV_CLASS* pPubDev=GetPPubDevFromPDeviceUnit(pDeviceUnit);
 	if (pPubDev->ResetDeviceStatus)
@@ -162,22 +162,22 @@ BOOL _ExecuteWriteFixValue(struct _DeviceUnit * pDeviceUnit,BYTE * pBuf,int byle
 }
 
 
-static inline void RegisterYkSelect(DEV_CLASS *pPubDev,YKSELECT_CALLBACK pfnYkSelect)
+inline void RegisterYkSelect(DEV_CLASS *pPubDev,YKSELECT_CALLBACK pfnYkSelect)
 {
 	pPubDev->YkSelect=pfnYkSelect;
 	pPubDev->pDeviceUnit->YkSelect=_YkSelect;
 }
-static inline void RegisterYkExecute(DEV_CLASS *pPubDev,YKEXECUTE_CALLBACK pfnYkExecute)
+inline void RegisterYkExecute(DEV_CLASS *pPubDev,YKEXECUTE_CALLBACK pfnYkExecute)
 {
 	pPubDev->YkExecute=pfnYkExecute;
 	pPubDev->pDeviceUnit->YkExecute=_YkExecute;
 }
-static inline void RegisterYkCancel(DEV_CLASS *pPubDev,YKCANCEL_CALLBACK pfnYkCancel)
+inline void RegisterYkCancel(DEV_CLASS *pPubDev,YKCANCEL_CALLBACK pfnYkCancel)
 {
 	pPubDev->YkCancel=pfnYkCancel;
 	pPubDev->pDeviceUnit->YkCancel=_YkCancel;
 }
-static inline void RegisterYkOperations(struct DEV_CLASS *pPubDev,YKOPERATION_CALLBACK pfnYkSelect,YKOPERATION_CALLBACK pfnYkExcute,YKOPERATION_CALLBACK pfnYkCancel)
+inline void RegisterYkOperations(struct DEV_CLASS *pPubDev,YKOPERATION_CALLBACK pfnYkSelect,YKOPERATION_CALLBACK pfnYkExcute,YKOPERATION_CALLBACK pfnYkCancel)
 {
 	if (pfnYkSelect)
 		pPubDev->RegisterYkSelect(pPubDev,pfnYkSelect);
@@ -186,22 +186,22 @@ static inline void RegisterYkOperations(struct DEV_CLASS *pPubDev,YKOPERATION_CA
 	if (pfnYkCancel)
 		pPubDev->RegisterYkCancel(pPubDev,pfnYkCancel);
 }
-static inline void RegisterSetDeviceTime(DEV_CLASS *pPubDev,SETDEVICETIME_CALLBACK pfnSetDeviceTime)
+inline void RegisterSetDeviceTime(DEV_CLASS *pPubDev,SETDEVICETIME_CALLBACK pfnSetDeviceTime)
 {
 	pPubDev->SetDeviceTime=pfnSetDeviceTime;
 	pPubDev->pDeviceUnit->SetDeviceTime=_SetDeviceTime;
 }
-static inline void RegisterResetDevice(DEV_CLASS *pPubDev,RESETDEVICE_CALLBACK pfnResetDevice)
+inline void RegisterResetDevice(DEV_CLASS *pPubDev,RESETDEVICE_CALLBACK pfnResetDevice)
 {
 	pPubDev->ResetDeviceStatus=pfnResetDevice;
 	pPubDev->pDeviceUnit->ResetDeviceStatus=_ResetDeviceStatus;
 }
-static inline void RegisterReadFixValue(struct DEV_CLASS *pPubDev,READFIXEDVALUE_CALLBACK pfnReadFixValue)
+inline void RegisterReadFixValue(struct DEV_CLASS *pPubDev,READFIXEDVALUE_CALLBACK pfnReadFixValue)
 {
 	pPubDev->ReadFixValue=pfnReadFixValue;
 	pPubDev->pDeviceUnit->SelectWriteFixValue=_SelectWriteFixValue;
 }
-static inline void RegisterWriteFixValue(struct DEV_CLASS *pPubDev,WRITEFIXEDVALUE_CALLBACK pfnWriteFixValue)
+inline void RegisterWriteFixValue(struct DEV_CLASS *pPubDev,WRITEFIXEDVALUE_CALLBACK pfnWriteFixValue)
 {
 	pPubDev->WriteFixValue=pfnWriteFixValue;
 	pPubDev->pDeviceUnit->ExecuteWriteFixValue=_ExecuteWriteFixValue;
@@ -209,29 +209,29 @@ static inline void RegisterWriteFixValue(struct DEV_CLASS *pPubDev,WRITEFIXEDVAL
 
 //////////////////////////////////////////////////////////////////////////
 /*注册事件*/
-static inline void RegisterPrePolling(struct DEV_CLASS *pPubDev,PREPOLLING_CALLBACK pfnPrePolling)
+inline void RegisterPrePolling(struct DEV_CLASS *pPubDev,PREPOLLING_CALLBACK pfnPrePolling)
 {
 	pPubDev->PrePolling=pfnPrePolling;
 }
 
-static inline void RegisterDefaultRecvCallback(struct DEV_CLASS *pPubDev,RECEIVE_CALLBACK pfnRecvCallBack)
+inline void RegisterDefaultRecvCallback(struct DEV_CLASS *pPubDev,RECEIVE_CALLBACK pfnRecvCallBack)
 {
 	pPubDev->DefaultRecvCallback=pfnRecvCallBack;
 }
 
-static inline void RegisterOnDestroy(struct DEV_CLASS *pPubDev,DESTROY_CALLBACK pfnOnDestroy)
+inline void RegisterOnDestroy(struct DEV_CLASS *pPubDev,DESTROY_CALLBACK pfnOnDestroy)
 {
 	pPubDev->OnDestroy=pfnOnDestroy;
 }
 
-static inline void RegisterOnReconnect(struct DEV_CLASS *pPubDev,DESTROY_CALLBACK pfnOnReconnect)
+inline void RegisterOnReconnect(struct DEV_CLASS *pPubDev,DESTROY_CALLBACK pfnOnReconnect)
 {
 	pPubDev->OnReconnect=pfnOnReconnect;
 }
 //////////////////////////////////////////////////////////////////////////
 /*发送接收相关*/
 
-static inline BOOL PollSendFrame(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,const LUA_RECV_CALLBACK pfnRecvCallBack)
+inline BOOL PollSendFrame(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,const LUA_RECV_CALLBACK pfnRecvCallBack)
 {
 	DeviceUnit *pDeviceUnit=pPubDev->pDeviceUnit;
 	if (pSend && wSize<BUFFER_SIZE) {
@@ -244,7 +244,7 @@ static inline BOOL PollSendFrame(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSi
 	}
 	return FALSE;
 }
-static BOOL InsertSendFrame(struct DEV_CLASS *pPubDev,BYTE *pSend,WORD cbSendSize,const LUA_RECV_CALLBACK pfnRecvCallBack)
+BOOL InsertSendFrame(struct DEV_CLASS *pPubDev,BYTE *pSend,WORD cbSendSize,const LUA_RECV_CALLBACK pfnRecvCallBack)
 {
 	DeviceUnit *pDeviceUnit=pPubDev->pDeviceUnit;
 	SENDFRAME_LIST *pInsertSendList=&pPubDev->m_InsertSendList;
@@ -260,7 +260,7 @@ static BOOL InsertSendFrame(struct DEV_CLASS *pPubDev,BYTE *pSend,WORD cbSendSiz
 	}
 }
 
-static inline BYTE* MakeFrame(struct DEV_CLASS *pPubDev,BYTE byCmd, BYTE *pData,BYTE byFrameType, WORD wDataLen, WORD *pwSize)
+inline BYTE* MakeFrame(struct DEV_CLASS *pPubDev,BYTE byCmd, BYTE *pData,BYTE byFrameType, WORD wDataLen, WORD *pwSize)
 {
 	struct _DeviceUnit *pDeviceUnit=pPubDev->pDeviceUnit;
 	CFrameUnit *pSFrameUnit=pDeviceUnit->pSFrameUnit;
@@ -282,7 +282,7 @@ static inline BYTE* MakeFrame(struct DEV_CLASS *pPubDev,BYTE byCmd, BYTE *pData,
 	if (pwSize) *pwSize=wSize;
 	return pBuffer;
 }
-static inline BOOL SendFrame(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,const LUA_RECV_CALLBACK pfnRecvCallBack)
+inline BOOL SendFrame(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,const LUA_RECV_CALLBACK pfnRecvCallBack)
 {
 	if (pPubDev->m_bInPollingSend)
 		pPubDev->PollSendFrame(pPubDev,pSend,wSize,pfnRecvCallBack);
@@ -292,17 +292,17 @@ static inline BOOL SendFrame(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,c
 	return TRUE;
 }
 
-static inline BYTE Get_RecvCID(struct DEV_CLASS *pPubDev)
+inline BYTE Get_RecvCID(struct DEV_CLASS *pPubDev)
 {return pPubDev->m_byRecvCID;}
-static inline BYTE Get_RecvADDR(struct DEV_CLASS *pPubDev)
+inline BYTE Get_RecvADDR(struct DEV_CLASS *pPubDev)
 {return pPubDev->m_byRecvADDR;}
-static inline BYTE Get_RecvFrameType(struct DEV_CLASS *pPubDev)
+inline BYTE Get_RecvFrameType(struct DEV_CLASS *pPubDev)
 {return pPubDev->m_byRecvFrameType;}
 
 //////////////////////////////////////////////////////////////////////////
 /*间隔发送*/
 
-static INTERVALSEND_INFO* RegisterIntervalSend(struct DEV_CLASS *pPubDev,DWORD dwIntervalSec,BYTE *pSend,WORD cbSendSize,const LUA_RECV_CALLBACK pfnRecvCallback)
+INTERVALSEND_INFO* RegisterIntervalSend(struct DEV_CLASS *pPubDev,DWORD dwIntervalSec,BYTE *pSend,WORD cbSendSize,const LUA_RECV_CALLBACK pfnRecvCallback)
 {
 	INTERVALSEND_LIST *pIntervalSendList=&pPubDev->m_IntervalsendList;
 	INTERVALSEND_INFO *pIntervalSend=NULL;
@@ -313,7 +313,7 @@ static INTERVALSEND_INFO* RegisterIntervalSend(struct DEV_CLASS *pPubDev,DWORD d
 	return pIntervalSend;
 }
 
-static INTERVALSEND_INFO* RegisterIntervalSend_Callback(struct DEV_CLASS *pPubDev,DWORD dwIntervalSec,const LUA_SEND_CALLBACK pfnSendCallback)
+INTERVALSEND_INFO* RegisterIntervalSend_Callback(struct DEV_CLASS *pPubDev,DWORD dwIntervalSec,const LUA_SEND_CALLBACK pfnSendCallback)
 {
 	INTERVALSEND_LIST *pIntervalSendList=&pPubDev->m_IntervalsendList;
 	INTERVALSEND_INFO *pIntervalSend=NULL;
@@ -326,14 +326,14 @@ static INTERVALSEND_INFO* RegisterIntervalSend_Callback(struct DEV_CLASS *pPubDe
 
 //////////////////////////////////////////////////////////////////////////
 /*数据处理*/
-static inline void ExplainYc(struct DEV_CLASS *pPubDev,WORD wYcindex,float fValue)
+inline void ExplainYc(struct DEV_CLASS *pPubDev,WORD wYcindex,float fValue)
 {
 	BYTE pxxxxExData[8];
 	*(long*)pxxxxExData=TRYXYCIDNO(0,pPubDev->pChannelUnit->m_ChannelNo,pPubDev->pDeviceUnit->m_DeviceNo,wYcindex);
 	*(float*)&pxxxxExData[4]=(float)(fValue);
 	ExplainYC(pGlobal,pxxxxExData,8);
 }
-static inline void ExplainYx(struct DEV_CLASS *pPubDev,WORD wYxindex,BOOL bOnoff)
+inline void ExplainYx(struct DEV_CLASS *pPubDev,WORD wYxindex,BOOL bOnoff)
 {
 	BYTE pxxxxExData[8];
 	*(long*)pxxxxExData=TRYXYCIDNO(0,pPubDev->pChannelUnit->m_ChannelNo,pPubDev->pDeviceUnit->m_DeviceNo,wYxindex);
@@ -349,7 +349,7 @@ static inline void ExplainYx(struct DEV_CLASS *pPubDev,WORD wYxindex,BOOL bOnoff
 	}*/
 }
 /*
-static void InsertYxDelayExplainNode(struct DEV_CLASS *pPubDev,YX_DELAY_EXPLAIN_NODE InsertionNode)
+void InsertYxDelayExplainNode(struct DEV_CLASS *pPubDev,YX_DELAY_EXPLAIN_NODE InsertionNode)
 {
 	YX_DELAY_EXPLAIN_NODE *pNode=(YX_DELAY_EXPLAIN_NODE*)malloc(sizeof(YX_DELAY_EXPLAIN_NODE));
 	if (pNode)
@@ -394,7 +394,7 @@ static void InsertYxDelayExplainNode(struct DEV_CLASS *pPubDev,YX_DELAY_EXPLAIN_
 	}//if (pNode)
 
 }
-static BOOL DeleteYxDelayExplainNode(struct DEV_CLASS *pPubDev,YX_DELAY_EXPLAIN_NODE* pInsertion)
+BOOL DeleteYxDelayExplainNode(struct DEV_CLASS *pPubDev,YX_DELAY_EXPLAIN_NODE* pInsertion)
 {
 	if (pInsertion==NULL)
 		return FALSE;
@@ -427,7 +427,7 @@ static BOOL DeleteYxDelayExplainNode(struct DEV_CLASS *pPubDev,YX_DELAY_EXPLAIN_
 	}
 	return FALSE;
 }
-static inline YX_DELAY_EXPLAIN_NODE* FindYxDelayExplainNode(struct DEV_CLASS *pPubDev,WORD wYxindex)
+inline YX_DELAY_EXPLAIN_NODE* FindYxDelayExplainNode(struct DEV_CLASS *pPubDev,WORD wYxindex)
 {
 	YX_DELAY_EXPLAIN_NODE *pNode=pPubDev->m_pYxDelayExplain_Head;
 	while (pNode)
@@ -438,7 +438,7 @@ static inline YX_DELAY_EXPLAIN_NODE* FindYxDelayExplainNode(struct DEV_CLASS *pP
 	}
 	return NULL;
 }
-static inline void DelayExplainYx(struct DEV_CLASS *pPubDev,WORD wYxindex,BOOL bOnoff,WORD nDelay)
+inline void DelayExplainYx(struct DEV_CLASS *pPubDev,WORD wYxindex,BOOL bOnoff,WORD nDelay)
 {
 	YX_DELAY_EXPLAIN_NODE YxDelayExplainNode={0};
 	YxDelayExplainNode.wYxindex=wYxindex;
@@ -448,7 +448,7 @@ static inline void DelayExplainYx(struct DEV_CLASS *pPubDev,WORD wYxindex,BOOL b
 	TRACE("Delay Explain YX:Index=%d,State=%d,Delay=%dS",wYxindex,bOnoff,nDelay);
 	pPubDev->InsertYxDelayExplainNode(pPubDev,YxDelayExplainNode);
 }*/
-static inline BOOL GetYcValue(struct DEV_CLASS *pPubDev,WORD wYcindex,float *pfReturn)
+inline BOOL GetYcValue(struct DEV_CLASS *pPubDev,WORD wYcindex,float *pfReturn)
 {
 	LONG nIDNo=TRYXYCIDNO(0,pPubDev->pChannelUnit->m_ChannelNo,pPubDev->pDeviceUnit->m_DeviceNo,wYcindex);
 	IoGlobal * pIoGlobal=(IoGlobal *)pGlobal;
@@ -466,7 +466,7 @@ static inline BOOL GetYcValue(struct DEV_CLASS *pPubDev,WORD wYcindex,float *pfR
 	}
 	return FALSE;
 }
-static inline BOOL GetYxValue(struct DEV_CLASS *pPubDev,WORD wYxindex,BOOL *pfReturn)
+inline BOOL GetYxValue(struct DEV_CLASS *pPubDev,WORD wYxindex,BOOL *pfReturn)
 {
 	LONG nIDNo=TRYXYCIDNO(0,pPubDev->pChannelUnit->m_ChannelNo,pPubDev->pDeviceUnit->m_DeviceNo,wYxindex);
 	IoGlobal * pIoGlobal=(IoGlobal *)pGlobal;
@@ -484,7 +484,7 @@ static inline BOOL GetYxValue(struct DEV_CLASS *pPubDev,WORD wYxindex,BOOL *pfRe
 	}
 	return FALSE;
 }
-static inline void ExplainYxByte(struct DEV_CLASS *pPubDev,WORD wYxindex,BYTE byte)
+inline void ExplainYxByte(struct DEV_CLASS *pPubDev,WORD wYxindex,BYTE byte)
 {
 	int i;
 	for (i=0;i<8;i++)
@@ -492,7 +492,7 @@ static inline void ExplainYxByte(struct DEV_CLASS *pPubDev,WORD wYxindex,BYTE by
 		pPubDev->ExplainYx(pPubDev,wYxindex+i,(byte>>i)&1);
 	}
 }
-static inline void RespondResult_YK(struct DEV_CLASS *pPubDev,enum yk_Kind YkKind,BOOL bSuccess)
+inline void RespondResult_YK(struct DEV_CLASS *pPubDev,enum yk_Kind YkKind,BOOL bSuccess)
 {
 	DeviceUnit *pDeviceUnit=pPubDev->pDeviceUnit;
 	ChannelUnit *pChannelUnit=pPubDev->pChannelUnit;
@@ -503,7 +503,7 @@ static inline void RespondResult_YK(struct DEV_CLASS *pPubDev,enum yk_Kind YkKin
 	if (YkKind==k_Execute && bSuccess)
 		pChannelUnit->SetKeepOne(pChannelUnit,TRUE,3);
 }
-static inline void RespondResultEasy_YK(struct DEV_CLASS *pPubDev,BOOL bSuccess)
+inline void RespondResultEasy_YK(struct DEV_CLASS *pPubDev,BOOL bSuccess)
 {
 	DeviceUnit *pDeviceUnit=pPubDev->pDeviceUnit;
 	ChannelUnit *pChannelUnit=pPubDev->pChannelUnit;
@@ -515,7 +515,7 @@ static inline void RespondResultEasy_YK(struct DEV_CLASS *pPubDev,BOOL bSuccess)
 	if (YkKind==k_Execute && bSuccess)
 		pChannelUnit->SetKeepOne(pChannelUnit,TRUE,3);
 }
-static inline void RespondResult_FixValue(struct DEV_CLASS * pPubDev,WORD wStartIdx,WORD wNum,WORD awFixValue[])
+inline void RespondResult_FixValue(struct DEV_CLASS * pPubDev,WORD wStartIdx,WORD wNum,WORD awFixValue[])
 {
 	if (pPubDev->m_byCache_FixValue_QH==0)
 	{
@@ -535,7 +535,7 @@ static inline void RespondResult_FixValue(struct DEV_CLASS * pPubDev,WORD wStart
 		free(pData);
 	}
 }
-static inline BOOL InitSoeUnit(struct DEV_CLASS *pPubDev,SOE_UNIT *pSoeUnit)
+inline BOOL InitSoeUnit(struct DEV_CLASS *pPubDev,SOE_UNIT *pSoeUnit)
 {
 	if (pSoeUnit==NULL)
 		return FALSE;
@@ -548,7 +548,7 @@ static inline BOOL InitSoeUnit(struct DEV_CLASS *pPubDev,SOE_UNIT *pSoeUnit)
 	return TRUE;
 }
 
-static inline BOOL ExplainSoe(struct DEV_CLASS *pPubDev,SOE_UNIT *pSoeUnit)
+inline BOOL ExplainSoe(struct DEV_CLASS *pPubDev,SOE_UNIT *pSoeUnit)
 {
 	DeviceUnit *pDeviceUnit=pPubDev->pDeviceUnit;
 	ChannelUnit *pChannelUnit=pPubDev->pChannelUnit;
@@ -607,7 +607,7 @@ static inline BOOL ExplainSoe(struct DEV_CLASS *pPubDev,SOE_UNIT *pSoeUnit)
 
 //////////////////////////////////////////////////////////////////////////
 /*设备信息*/
-static inline TIME_UNIT GetDateTime(struct DEV_CLASS *pPubDev)
+inline TIME_UNIT GetDateTime(struct DEV_CLASS *pPubDev)
 {
 	TIME_UNIT DataTime;
 	
@@ -632,20 +632,20 @@ int Get_DeviceNo(struct DEV_CLASS *pPubDev)
 {return pPubDev->pDeviceUnit->m_DeviceNo;};
 BYTE Get_ChannelNo(struct DEV_CLASS *pPubDev)
 {return pPubDev->pChannelUnit->m_ChannelNo;}
-static inline BYTE Get_LinkAddr(struct DEV_CLASS *pPubDev)
+inline BYTE Get_LinkAddr(struct DEV_CLASS *pPubDev)
 {return pPubDev->pDeviceUnit->m_LinkAddr;}
-static inline void Set_LinkAddr(struct DEV_CLASS *pPubDev,BYTE byAddr)
+inline void Set_LinkAddr(struct DEV_CLASS *pPubDev,BYTE byAddr)
 {pPubDev->pDeviceUnit->m_LinkAddr=byAddr;}
-static inline const char*Get_LinkAddr2(struct DEV_CLASS *pPubDev)
+inline const char*Get_LinkAddr2(struct DEV_CLASS *pPubDev)
 {return pPubDev->pDeviceUnit->m_LinkAddr2;}
-static inline const char*Get_Param1(struct DEV_CLASS *pPubDev)
+inline const char*Get_Param1(struct DEV_CLASS *pPubDev)
 {return pPubDev->pDeviceUnit->m_Param1;}
-static inline const char*Get_Param2(struct DEV_CLASS *pPubDev)
+inline const char*Get_Param2(struct DEV_CLASS *pPubDev)
 {return pPubDev->pDeviceUnit->m_Param2;}
 
 //////////////////////////////////////////////////////////////////////////
 /*设备操作*/
-static inline void InnerChannelSendData(struct DEV_CLASS *pPubDev,BYTE *pData,int nSize,BYTE byCID)
+inline void InnerChannelSendData(struct DEV_CLASS *pPubDev,BYTE *pData,int nSize,BYTE byCID)
 {
 	BYTE *pSend=malloc(nSize+3);
 	if (pSend==NULL) 
@@ -660,14 +660,14 @@ static inline void InnerChannelSendData(struct DEV_CLASS *pPubDev,BYTE *pData,in
 	InnerChannelMailData(pGlobal,byCID,0xff,pSend,3+nSize);
 	free(pSend);
 }
-static inline void SetKeepSend(struct DEV_CLASS *pPubDev,int iKeepSec)
+inline void SetKeepSend(struct DEV_CLASS *pPubDev,int iKeepSec)
 {pPubDev->pChannelUnit->SetKeepOne(pPubDev->pChannelUnit,TRUE,iKeepSec);}
-static inline void ReleaseKeepSend(struct DEV_CLASS *pPubDev)
+inline void ReleaseKeepSend(struct DEV_CLASS *pPubDev)
 {pPubDev->pChannelUnit->SetKeepOne(pPubDev->pChannelUnit,FALSE,0);}
 
 //////////////////////////////////////////////////////////////////////////
 /*接口*/
-static BOOL ExplainLinkData(struct _DeviceUnit * pDeviceUnit,BYTE *pBuf,WORD bySize)
+BOOL ExplainLinkData(struct _DeviceUnit * pDeviceUnit,BYTE *pBuf,WORD bySize)
 {
 //	printf("ExplainLinkData");
 	//只要帧校验通过就需要返回TRUE
@@ -741,7 +741,7 @@ static BOOL ExplainLinkData(struct _DeviceUnit * pDeviceUnit,BYTE *pBuf,WORD byS
 	return bRet;
 }
 
-static BOOL RunPolling(struct _DeviceUnit * pDeviceUnit)
+BOOL RunPolling(struct _DeviceUnit * pDeviceUnit)
 {
 	if(!pDeviceUnit||!pDeviceUnit->pExDeviceUnit||!pDeviceUnit->pChannel)
 		return FALSE;
@@ -833,7 +833,7 @@ __Polling_End:
 
 }
 
-static void InitPubDevDev(DEV_CLASS	* pPubDev)
+void InitPubDevDev(DEV_CLASS	* pPubDev)
 {
 	if(pPubDev)
 	{

@@ -1,7 +1,64 @@
 #include "dev.h"
 #include "main.h"
 #include "luascript.h"
-#include "scriptif.h"
+#include <signal.h>   /* for signal */
+#include <execinfo.h> /* for backtrace() */
+
+BOOL g_bRegSignal=FALSE;
+void DumpBacktrace()
+{
+	int i,nPtrs;
+	void *buffer[100];
+	char **strings;
+	nPtrs=backtrace(buffer,100);
+	printf("\n backtrace() returned %d addresses",nPtrs);
+
+	strings=backtrace_symbols(buffer,nPtrs);
+	if (strings==NULL) {
+		perror("backtrace_symbols");
+		exit(EXIT_FAILURE);
+	}
+	for (i=0;i<nPtrs;i++) {
+		printf("\n [%02d] %s",i,strings[i]);
+	}
+	free(strings);
+}
+
+void SignalHander(int signo)
+{
+	printf("\n\n=========>>>catch signal %d (%s) <<<=========",
+		signo, (char *)strsignal(signo));
+	printf("\nDump stack start...");
+	DumpBacktrace();
+	printf("\nDump stack end...");
+	/* 恢复并发送信号 */
+	signal(signo, SIG_DFL);
+	raise(signo);
+
+}
+
+void PrintSigno(int signo)
+{
+    static int i = 0;
+	printf("\n\n=========>>>catch signal %d (%s) i = %d <<<=========",
+	signo, (char *)strsignal(signo), i++);
+	printf("\nDump stack start...");
+	DumpBacktrace();
+	printf("\nDump stack end...");
+
+}
+
+void RegSignal()
+{
+	signal(SIGINT, SignalHander);
+	signal(SIGSEGV, SignalHander);
+	signal(SIGUSR1, SignalHander);
+	printf("\nCurrent function calls list is: ");
+	printf("\n----------------------------------");
+	DumpBacktrace();
+	printf("\n----------------------------------\n");
+
+}
 
 // BOOL PREPOLLING_CALLBACK(struct _PubDev *pPubDev)//Polling回调函数
 // BOOL RECEIVE_CALLBACK(struct _PubDev *pPubDev,BYTE *pRecv,int nSize)//报文接收回调函数
@@ -46,6 +103,10 @@ BOOL InitCommunication(struct DEV_CLASS *pPubDev)
 	pPubDev->RegisterResetDevice(pPubDev,ResetDevice);
 	pPubDev->RegisterSetDeviceTime(pPubDev,SetTime);
 	pPubDev->RegisterYkOperations(pPubDev,YkSelect,YkExecute,YkCancel);
+	if (!g_bRegSignal) {
+		g_bRegSignal=TRUE;
+		RegSignal();
+	}
 	//LoadDevScript(pPubDev,"test.lua");
 	//HandleOnInit(pPubDev);
 	return TRUE;

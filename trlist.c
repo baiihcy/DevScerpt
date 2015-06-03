@@ -108,7 +108,7 @@ TR_LIST_NODE* InsertNode(struct TR_LIST *pList,TR_LIST_NODE *pPrev,TR_LIST_NODE 
 {
 	if (!pList || !pNode)
 		return NULL;
-	if (!pList->m_pListHead) {
+	if (NULL==pList->m_pListHead) {
 		pList->SetHead(pList,pNode);
 		return pNode;
 	}
@@ -116,7 +116,7 @@ TR_LIST_NODE* InsertNode(struct TR_LIST *pList,TR_LIST_NODE *pPrev,TR_LIST_NODE 
 	if (pPrev) pNext=pPrev->pNext;
 	else pNext=pList->m_pListHead;	
 	
-	if (pNode!=pPrev->pNext) {
+	if (!pPrev || pNode!=pPrev->pNext) {
 		pNode->pPrev=pPrev;
 		pNode->pNext=pNext;
 
@@ -158,7 +158,7 @@ TR_LIST_NODE* InsertData(struct TR_LIST *pList,TR_LIST_NODE *pPrev,void *pData)
 	if (pNode) {
 		memset(pNode,0,sizeof(TR_LIST_NODE));
 		pNode->pData=pData;
-		if (!pList->InsertNode(pList,pPrev,pNode)) {
+		if (NULL==pList->InsertNode(pList,pPrev,pNode)) {
 			free(pNode);
 			printf("\n InsertData error : Failed to InsertNode");
 			return NULL;
