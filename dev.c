@@ -240,6 +240,15 @@ inline BOOL PollSendFrame(struct DEV_CLASS *pPubDev, BYTE *pSend,WORD wSize,cons
 		COPY_LUA_CALLBACK(pPubDev->m_NowPollSend.m_pfnRecvCallBack,pfnRecvCallBack);
 		
 		pDeviceUnit->PollingRawFrame(pDeviceUnit,pSend,wSize,eCid_PollSendFrame);
+
+
+		if (pPubDev->m_tInsertSend && time(NULL)-pPubDev->m_tInsertSend>5)  {
+			/*如果插帧发送超过5秒后激发轮训，则认为插帧已经处理或则接收超时*/
+			SENDFRAME_LIST *pInsertSendList=&pPubDev->m_InsertSendList;
+			pInsertSendList->Clear(pInsertSendList);
+			pPubDev->m_tInsertSend=0;
+		}
+
 		return TRUE;
 	}
 	return FALSE;
@@ -250,9 +259,11 @@ BOOL InsertSendFrame(struct DEV_CLASS *pPubDev,BYTE *pSend,WORD cbSendSize,const
 	SENDFRAME_LIST *pInsertSendList=&pPubDev->m_InsertSendList;
 	SENDFRAME_INFO *pInsertSend=NULL;
 	pInsertSend=pInsertSendList->AddHead(pInsertSendList,pSend,cbSendSize,pfnRecvCallBack);
+	TRACE("InsertSendFrame: count=%d",pInsertSendList->m_TRList.GetCount(&pInsertSendList->m_TRList));
 	if (pInsertSend) {
 		pDeviceUnit->InsertRawFrame(pDeviceUnit,pSend,cbSendSize,eCid_InsertSendFrame);
 		DEBUG_PRINT(pPubDev,"Insert Frame!!!");
+		pPubDev->m_tInsertSend=time(NULL);//保存发送时间
 		return TRUE;
 	} else {
 		TRACE("InsertSendFrame Error");
@@ -736,8 +747,12 @@ BOOL ExplainLinkData(struct _DeviceUnit * pDeviceUnit,BYTE *pBuf,WORD bySize)
 		pPubDev->OnReconnect(pPubDev);
 	}
 
-	if (pSendInfo==pInsertSendList->GetTail(pInsertSendList))
+	if (pSendInfo==pInsertSendList->GetTail(pInsertSendList)) {
 		pInsertSendList->DelTail(pInsertSendList);
+		pPubDev->m_tInsertSend=time(NULL)
+		if (NULL==pInsertSendList->GetTail(pInsertSendList))
+			pPubDev->m_tInsertSend=0;
+	}
 	return bRet;
 }
 

@@ -127,6 +127,7 @@ typedef struct DEV_CLASS
 	BYTE m_pSendBuffer[BUFFER_SIZE];
 	SENDFRAME_INFO m_NowPollSend;
 	SENDFRAME_LIST m_InsertSendList;
+	time_t m_tInsertSend;
 	
 	/*º‰∏Ù∑¢ÀÕ  Ù–‘*/
 	INTERVALSEND_LIST m_IntervalsendList;
